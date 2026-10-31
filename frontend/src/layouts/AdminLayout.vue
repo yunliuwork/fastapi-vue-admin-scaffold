@@ -16,7 +16,7 @@ const collapsed = ref(false)
 const passwordOpen = ref(false)
 const savingPassword = ref(false)
 const passwordForm = reactive({ old_password: '', new_password: '' })
-const openKeys = ref<string[]>(['/system'])
+const openKeys = ref<string[]>([])
 const selectedKeys = computed(() => [route.path])
 
 function toItems(nodes: MenuNode[]): ItemType[] {
@@ -53,15 +53,32 @@ function onMenuClick(info: { key: string | number }) {
 }
 
 function onOpenChange(keys: (string | number)[]) {
-  openKeys.value = keys.map(String)
+  const values = keys.map(String)
+  const dirs = topLevelDirs()
+  // 手风琴：只保留最后打开的那个一级目录（以及它下面的子目录）
+  const owner = values
+    .map((key) => dirs.find((dir) => key === dir || key.startsWith(`${dir}/`)))
+    .filter((dir): dir is string => Boolean(dir))
+    .pop()
+  openKeys.value = owner ? values.filter((key) => key === owner || key.startsWith(`${owner}/`)) : []
+}
+
+function topLevelDirs(): string[] {
+  return session.menus
+    .filter((node) => node.menu_type === 'directory' && node.path)
+    .map((node) => node.path)
+}
+
+function dirKeyForPath(path: string): string | null {
+  return topLevelDirs().find((dir) => path === dir || path.startsWith(`${dir}/`)) ?? null
 }
 
 watch(
-  () => route.path,
-  (path) => {
-    if (path.startsWith('/system') && !openKeys.value.includes('/system')) {
-      openKeys.value = [...openKeys.value, '/system']
-    }
+  () => [route.path, session.menus.length] as const,
+  ([path]) => {
+    // 进入页面时只展开它所属的一级目录，其它目录收起
+    const dir = dirKeyForPath(path)
+    openKeys.value = dir ? [dir] : []
   },
   { immediate: true },
 )
