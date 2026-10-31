@@ -4,7 +4,7 @@
 
 ## admin-frontend
 
-Vue 3 + Ant Design Vue 后台页面规范（列表铺满、双列弹窗、`v-permission`、中文文案等）。详见 [admin-frontend/SKILL.md](./admin-frontend/SKILL.md)。
+Vue 3 + Ant Design Vue 后台页面规范（列表铺满、表格自适应、状态开关、菜单类型三色标签、双列弹窗、`v-permission`、中文文案等）。详见 [admin-frontend/SKILL.md](./admin-frontend/SKILL.md)。
 
 ### 在 Cursor 里启用
 

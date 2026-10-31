@@ -1,17 +1,12 @@
-from tests.helpers import find_menu
+from tests.helpers import create_role, find_menu
 
 
 def test_user_without_permission_is_forbidden(client):
     admin = login(client)
     user_menu = find_menu(menu_tree(client, admin), "system:user:list")
     assert user_menu is not None
-    role = client.post(
-        "/api/v1/roles",
-        headers=admin,
-        json={"name": "只读", "code": "reader", "remark": "", "status": "active", "menu_ids": [user_menu["id"]]},
-    )
-    assert role.status_code == 200
-    role_id = role.json()["data"]["id"]
+    role = create_role(client, admin, name="只读", code="reader", menu_ids=[user_menu["id"]])
+    role_id = role["id"]
     created = client.post(
         "/api/v1/users",
         headers=admin,
@@ -35,12 +30,8 @@ def test_user_without_permission_is_forbidden(client):
 def test_menu_tree_includes_ancestor_of_assigned_page(client):
     admin = login(client)
     user_menu = find_menu(menu_tree(client, admin), "system:user:list")
-    role = client.post(
-        "/api/v1/roles",
-        headers=admin,
-        json={"name": "用户页", "code": "user_page", "remark": "", "status": "active", "menu_ids": [user_menu["id"]]},
-    )
-    role_id = role.json()["data"]["id"]
+    role = create_role(client, admin, name="用户页", code="user_page", menu_ids=[user_menu["id"]])
+    role_id = role["id"]
     client.post(
         "/api/v1/users",
         headers=admin,
@@ -60,6 +51,78 @@ def test_menu_tree_includes_ancestor_of_assigned_page(client):
     assert "system:user:list" in data["permissions"]
     assert "system:user:create" not in data["permissions"]
     assert "system:role:list" not in data["permissions"]
+
+
+def test_role_status_switch_and_menu_assignment(client):
+    admin = login(client)
+    user_menu = find_menu(menu_tree(client, admin), "system:user:list")
+    assert user_menu is not None
+
+    role = client.post(
+        "/api/v1/roles",
+        headers=admin,
+        json={"name": "临时角色", "code": "temp_role", "remark": ""},
+    )
+    assert role.status_code == 200
+    data = role.json()["data"]
+    assert data["status"] == "active"
+    assert data["menu_ids"] == []
+    role_id = data["id"]
+
+    assigned = client.put(
+        f"/api/v1/roles/{role_id}/menus",
+        headers=admin,
+        json={"menu_ids": [user_menu["id"]]},
+    )
+    assert assigned.status_code == 200
+    assert assigned.json()["data"]["menu_ids"] == [user_menu["id"]]
+
+    disabled = client.patch(
+        f"/api/v1/roles/{role_id}/status",
+        headers=admin,
+        json={"status": "disabled"},
+    )
+    assert disabled.status_code == 200
+    assert disabled.json()["data"]["status"] == "disabled"
+
+    client.post(
+        "/api/v1/users",
+        headers=admin,
+        json={"username": "tempuser", "password": "secret12", "nickname": "临时", "role_ids": [role_id]},
+    )
+    temp_headers = login(client, "tempuser", "secret12")
+    assert client.get("/api/v1/users", headers=temp_headers).status_code == 403
+
+    roles = client.get("/api/v1/roles", headers=admin).json()["data"]["items"]
+    super_role = next(item for item in roles if item["code"] == "super_admin")
+    blocked = client.patch(
+        f"/api/v1/roles/{super_role['id']}/status",
+        headers=admin,
+        json={"status": "disabled"},
+    )
+    assert blocked.status_code == 400
+    assert blocked.json()["message"] == "不能停用超级管理员角色"
+
+
+def test_delete_role_with_menus_and_bound_user(client):
+    admin = login(client)
+    user_menu = find_menu(menu_tree(client, admin), "system:user:list")
+    role = create_role(client, admin, name="待删除", code="to_delete", menu_ids=[user_menu["id"]])
+    created_user = client.post(
+        "/api/v1/users",
+        headers=admin,
+        json={"username": "deltest", "password": "secret12", "nickname": "删除测试", "role_ids": [role["id"]]},
+    )
+    assert created_user.status_code == 200
+
+    removed = client.delete(f"/api/v1/roles/{role['id']}", headers=admin)
+    assert removed.status_code == 200, removed.text
+
+    roles = client.get("/api/v1/roles", headers=admin).json()["data"]["items"]
+    assert all(item["code"] != "to_delete" for item in roles)
+    users = client.get("/api/v1/users?page=1&page_size=10", headers=admin).json()["data"]["items"]
+    still_there = next(item for item in users if item["username"] == "deltest")
+    assert still_there["roles"] == []
 
 
 def test_delete_menu_with_children_is_rejected(client):

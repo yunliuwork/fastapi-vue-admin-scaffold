@@ -1,4 +1,4 @@
-import { deleteJson, getJson, postJson, putJson } from './http'
+import { deleteJson, getJson, patchJson, postJson, putJson } from './http'
 import type { Page } from './types'
 
 export interface ScheduledJobItem {
@@ -36,6 +36,20 @@ export function listScheduledJobs(params: { page: number; page_size: number }) {
   return getJson<Page<ScheduledJobItem>>('/scheduled-jobs', params)
 }
 
+export interface JobLogStats {
+  total: number
+  older_than_7d: number
+  older_than_30d: number
+}
+
+export function getJobLogStats() {
+  return getJson<JobLogStats>('/scheduled-jobs/logs/stats')
+}
+
+export function cleanupJobLogs(days: number | null) {
+  return postJson<{ deleted: number }>('/scheduled-jobs/logs/cleanup', { days })
+}
+
 export function listJobHandlers() {
   return getJson<ScheduledJobHandler[]>('/scheduled-jobs/handlers')
 }
@@ -64,6 +78,10 @@ export function updateScheduledJob(
   },
 ) {
   return putJson<ScheduledJobItem>(`/scheduled-jobs/${id}`, body)
+}
+
+export function updateScheduledJobStatus(id: number, enabled: boolean) {
+  return patchJson<ScheduledJobItem>(`/scheduled-jobs/${id}/status`, { enabled })
 }
 
 export function deleteScheduledJob(id: number) {

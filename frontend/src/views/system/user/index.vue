@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { Modal, message } from 'ant-design-vue'
+import type { TableColumnsType } from 'ant-design-vue'
 import {
   createUser,
   listUsers,
@@ -12,6 +13,7 @@ import {
 } from '@/api/user'
 import { listRoles } from '@/api/role'
 import type { RoleItem } from '@/api/types'
+import { useTableHeight } from '@/utils/useTableHeight'
 
 const loading = ref(false)
 const items = ref<UserItem[]>([])
@@ -42,13 +44,15 @@ const statusOptions = [
   { value: 'active', label: '正常' },
   { value: 'disabled', label: '停用' },
 ]
-const columns = [
-  { title: '用户名', dataIndex: 'username' },
-  { title: '昵称', dataIndex: 'nickname' },
-  { title: '角色', dataIndex: 'roles' },
-  { title: '账号状态', dataIndex: 'status', width: 120 },
-  { title: '谷歌验证', dataIndex: 'totp', width: 140 },
-  { title: '操作', dataIndex: 'actions', width: 220 },
+const tableWrap = ref<HTMLElement | null>(null)
+const tableY = useTableHeight(tableWrap)
+const columns: TableColumnsType = [
+  { title: '用户名', dataIndex: 'username', width: 140, ellipsis: true },
+  { title: '昵称', dataIndex: 'nickname', width: 130, ellipsis: true },
+  { title: '角色', dataIndex: 'roles', width: 160, ellipsis: true },
+  { title: '账号状态', dataIndex: 'status', width: 110 },
+  { title: '谷歌验证', dataIndex: 'totp', width: 130 },
+  { title: '操作', dataIndex: 'actions', width: 230, fixed: 'right' },
 ]
 
 const rules = computed(() => ({
@@ -234,7 +238,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section class="page">
+  <section class="page page-fill">
     <h1>用户管理</h1>
     <div class="toolbar">
       <a-form layout="inline" :model="query" @finish="search">
@@ -256,64 +260,67 @@ onMounted(async () => {
       </a-form>
       <a-button v-permission="'system:user:create'" type="primary" @click="openCreate">新增用户</a-button>
     </div>
-    <a-table
-      row-key="id"
-      :columns="columns"
-      :data-source="items"
-      :loading="loading"
-      :pagination="{ current: page, pageSize, total, showSizeChanger: true }"
-      @change="onTableChange"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.dataIndex === 'roles'">
-          {{ record.roles.map((role: { name: string }) => role.name).join('、') || '未分配' }}
+    <div ref="tableWrap" class="page-fill-body table-fill">
+      <a-table
+        row-key="id"
+        :columns="columns"
+        :data-source="items"
+        :loading="loading"
+        :scroll="{ x: 900, y: tableY }"
+        :pagination="{ current: page, pageSize, total, showSizeChanger: true }"
+        @change="onTableChange"
+      >
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.dataIndex === 'roles'">
+            {{ record.roles.map((role: { name: string }) => role.name).join('、') || '未分配' }}
+          </template>
+          <template v-else-if="column.dataIndex === 'status'">
+            <div v-permission="'system:user:disable'" class="cell-switch">
+              <a-switch
+                :checked="record.status === 'active'"
+                :disabled="record.is_superuser || rowBusy === record.id"
+                checked-children="正常"
+                un-checked-children="停用"
+                @change="(checked: boolean) => onStatusSwitch(record as UserItem, checked)"
+              />
+            </div>
+            <span v-if="record.is_superuser" class="sub">超级管理员</span>
+          </template>
+          <template v-else-if="column.dataIndex === 'totp'">
+            <div v-permission="'system:user:update'" class="cell-switch">
+              <a-switch
+                :checked="Boolean(record.totp_required)"
+                :disabled="rowBusy === record.id"
+                checked-children="启用"
+                un-checked-children="关闭"
+                @change="(checked: boolean) => onTotpSwitch(record as UserItem, checked)"
+              />
+              <span v-if="totpBindHint(record as UserItem)" class="sub">{{ totpBindHint(record as UserItem) }}</span>
+            </div>
+          </template>
+          <template v-else-if="column.dataIndex === 'actions'">
+            <a-button v-permission="'system:user:update'" type="link" size="small" @click="openEdit(record)">编辑</a-button>
+            <a-button
+              v-permission="'system:user:reset-password'"
+              type="link"
+              size="small"
+              @click="openReset(record)"
+            >
+              重置密码
+            </a-button>
+            <a-popconfirm
+              v-if="record.totp_required && record.totp_enabled"
+              title="清除绑定后，用户下次登录需重新绑定验证器"
+              ok-text="重置"
+              cancel-text="取消"
+              @confirm="resetTotp(record)"
+            >
+              <a-button v-permission="'system:user:update'" type="link" size="small">重置验证器</a-button>
+            </a-popconfirm>
+          </template>
         </template>
-        <template v-else-if="column.dataIndex === 'status'">
-          <div v-permission="'system:user:disable'" class="cell-switch">
-            <a-switch
-              :checked="record.status === 'active'"
-              :disabled="record.is_superuser || rowBusy === record.id"
-              checked-children="正常"
-              un-checked-children="停用"
-              @change="(checked: boolean) => onStatusSwitch(record as UserItem, checked)"
-            />
-          </div>
-          <span v-if="record.is_superuser" class="sub">超级管理员</span>
-        </template>
-        <template v-else-if="column.dataIndex === 'totp'">
-          <div v-permission="'system:user:update'" class="cell-switch">
-            <a-switch
-              :checked="Boolean(record.totp_required)"
-              :disabled="rowBusy === record.id"
-              checked-children="启用"
-              un-checked-children="关闭"
-              @change="(checked: boolean) => onTotpSwitch(record as UserItem, checked)"
-            />
-            <span v-if="totpBindHint(record as UserItem)" class="sub">{{ totpBindHint(record as UserItem) }}</span>
-          </div>
-        </template>
-        <template v-else-if="column.dataIndex === 'actions'">
-          <a-button v-permission="'system:user:update'" type="link" size="small" @click="openEdit(record)">编辑</a-button>
-          <a-button
-            v-permission="'system:user:reset-password'"
-            type="link"
-            size="small"
-            @click="openReset(record)"
-          >
-            重置密码
-          </a-button>
-          <a-popconfirm
-            v-if="record.totp_required && record.totp_enabled"
-            title="清除绑定后，用户下次登录需重新绑定验证器"
-            ok-text="重置"
-            cancel-text="取消"
-            @confirm="resetTotp(record)"
-          >
-            <a-button v-permission="'system:user:update'" type="link" size="small">重置验证器</a-button>
-          </a-popconfirm>
-        </template>
-      </template>
-    </a-table>
+      </a-table>
+    </div>
 
     <a-modal
       v-model:open="editorOpen"

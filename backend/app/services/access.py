@@ -2,7 +2,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.core.errors import AppError
-from app.models.associations import role_menus, user_roles
+from app.models.associations import role_menus
 from app.models.menu import Menu
 from app.models.role import Role
 from app.models.user import User
@@ -141,16 +141,34 @@ def save_role(db: Session, payload: RoleWrite, role: Role | None = None, *, acto
         raise AppError(409, "角色编码已存在")
     created = role is None
     if role is None:
-        role = Role(name=payload.name, code=payload.code)
+        role = Role(name=payload.name, code=payload.code, status="active")
         db.add(role)
     elif role.code == "super_admin" and payload.code != role.code:
         raise AppError(400, "不能修改超级管理员角色编码")
     role.name = payload.name
     role.code = payload.code
     role.remark = payload.remark
-    role.status = payload.status
-    role.menus = _menus_by_ids(db, payload.menu_ids)
     write_log(db, actor, "新增角色" if created else "编辑角色", payload.name)
+    db.commit()
+    db.refresh(role)
+    return role
+
+
+def update_role_status(db: Session, role_id: int, status: str, actor: User) -> Role:
+    role = get_role(db, role_id)
+    if role.code == "super_admin" and status != "active":
+        raise AppError(400, "不能停用超级管理员角色")
+    role.status = status
+    write_log(db, actor, "启用角色" if status == "active" else "停用角色", role.name)
+    db.commit()
+    db.refresh(role)
+    return role
+
+
+def update_role_menus(db: Session, role_id: int, menu_ids: list[int], actor: User) -> Role:
+    role = get_role(db, role_id)
+    role.menus = _menus_by_ids(db, menu_ids)
+    write_log(db, actor, "分配菜单", role.name)
     db.commit()
     db.refresh(role)
     return role
@@ -161,8 +179,9 @@ def delete_role(db: Session, role_id: int, actor: User) -> None:
     if role.code == "super_admin":
         raise AppError(400, "不能删除超级管理员角色")
     name = role.name
-    db.execute(delete(role_menus).where(role_menus.c.role_id == role.id))
-    db.execute(delete(user_roles).where(user_roles.c.role_id == role.id))
+    # 先解除关联再删角色；直接 delete 关联表会和 ORM 的级联删除冲突（StaleDataError）
+    role.menus = []
+    role.users = []
     db.delete(role)
     write_log(db, actor, "删除角色", name)
     db.commit()

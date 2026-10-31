@@ -79,25 +79,21 @@ def test_cannot_disable_superuser(client):
 
 
 def test_operator_cannot_change_superuser(client):
-    from tests.helpers import find_menu
+    from tests.helpers import create_role, find_menu
 
     admin = login(client)
     tree = client.get("/api/v1/menus", headers=admin).json()["data"]
     reset_menu = find_menu(tree, "system:user:reset-password")
     update_menu = find_menu(tree, "system:user:update")
     assert reset_menu is not None and update_menu is not None
-    role = client.post(
-        "/api/v1/roles",
-        headers=admin,
-        json={
-            "name": "账号维护",
-            "code": "account_ops",
-            "remark": "",
-            "status": "active",
-            "menu_ids": [reset_menu["id"], update_menu["id"]],
-        },
+    role = create_role(
+        client,
+        admin,
+        name="账号维护",
+        code="account_ops",
+        menu_ids=[reset_menu["id"], update_menu["id"]],
     )
-    role_id = role.json()["data"]["id"]
+    role_id = role["id"]
     client.post(
         "/api/v1/users",
         headers=admin,

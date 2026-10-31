@@ -4,8 +4,16 @@ from sqlalchemy.orm import Session
 from app.api.deps import require_permission
 from app.core.response import ok
 from app.db.session import get_db
-from app.schemas.bodies import RoleWrite
-from app.services.access import delete_role, get_role, list_roles, role_dict, save_role
+from app.schemas.bodies import RoleMenusUpdate, RoleWrite, StatusUpdate
+from app.services.access import (
+    delete_role,
+    get_role,
+    list_roles,
+    role_dict,
+    save_role,
+    update_role_menus,
+    update_role_status,
+)
 
 router = APIRouter(prefix="/roles", tags=["roles"])
 
@@ -55,6 +63,26 @@ def put_role(
 ):
     role = get_role(db, role_id)
     return ok(role_dict(save_role(db, body, role, actor=_user)))
+
+
+@router.patch("/{role_id}/status")
+def patch_role_status(
+    role_id: int,
+    body: StatusUpdate,
+    db: Session = Depends(get_db),
+    _user=Depends(require_permission("system:role:update")),
+):
+    return ok(role_dict(update_role_status(db, role_id, body.status, _user)))
+
+
+@router.put("/{role_id}/menus")
+def put_role_menus(
+    role_id: int,
+    body: RoleMenusUpdate,
+    db: Session = Depends(get_db),
+    _user=Depends(require_permission("system:role:update")),
+):
+    return ok(role_dict(update_role_menus(db, role_id, body.menu_ids, _user)))
 
 
 @router.delete("/{role_id}")

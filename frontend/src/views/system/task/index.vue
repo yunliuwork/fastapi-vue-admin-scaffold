@@ -1,20 +1,29 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { message } from 'ant-design-vue'
+import { Modal, message } from 'ant-design-vue'
+import type { TableColumnsType } from 'ant-design-vue'
 import {
+  cleanupJobLogs,
   createScheduledJob,
   deleteScheduledJob,
+  getJobLogStats,
   listJobHandlers,
   listScheduledJobLogs,
   listScheduledJobs,
   runScheduledJob,
   updateScheduledJob,
+  updateScheduledJobStatus,
+  type JobLogStats,
   type ScheduledJobItem,
   type ScheduledJobLogItem,
 } from '@/api/task'
+import { useSessionStore } from '@/stores/session'
+import { useTableHeight } from '@/utils/useTableHeight'
 
 const loading = ref(false)
 const items = ref<ScheduledJobItem[]>([])
+const session = useSessionStore()
+const rowBusy = ref<number | null>(null)
 const total = ref(0)
 const page = ref(1)
 const pageSize = ref(10)
@@ -29,6 +38,10 @@ const logTotal = ref(0)
 const logPage = ref(1)
 const logJobId = ref<number | null>(null)
 const logJobName = ref('')
+const cleanOpen = ref(false)
+const cleaning = ref(false)
+const cleanRule = ref<'all' | '7' | '30'>('30')
+const cleanStats = ref<JobLogStats | null>(null)
 
 const form = reactive({
   name: '',
@@ -41,17 +54,19 @@ const form = reactive({
   remark: '',
 })
 
-const columns = [
-  { title: '名称', dataIndex: 'name', width: 160, ellipsis: true },
-  { title: '任务', dataIndex: 'job_key', width: 180, ellipsis: true },
-  { title: '触发规则', dataIndex: 'trigger_label', ellipsis: true },
-  { title: '状态', dataIndex: 'enabled', width: 88 },
-  { title: '上次执行', dataIndex: 'last_run_at', width: 188, ellipsis: true },
+const tableWrap = ref<HTMLElement | null>(null)
+const tableY = useTableHeight(tableWrap)
+const columns: TableColumnsType = [
+  { title: '名称', dataIndex: 'name', width: 120, ellipsis: true },
+  { title: '任务', dataIndex: 'job_key', width: 120, ellipsis: true },
+  { title: '触发规则', dataIndex: 'trigger_label', width: 90, ellipsis: true },
+  { title: '状态', dataIndex: 'enabled', width: 110 },
+  { title: '上次执行', dataIndex: 'last_run_at', width: 130, ellipsis: true },
   { title: '上次结果', dataIndex: 'last_status', width: 96 },
-  { title: '操作', dataIndex: 'actions', width: 220 },
+  { title: '操作', dataIndex: 'actions', width: 224, fixed: 'right' },
 ]
 
-const logColumns = [
+const logColumns: TableColumnsType = [
   { title: '开始时间', dataIndex: 'started_at', width: 188 },
   { title: '方式', dataIndex: 'trigger_mode', width: 88 },
   { title: '结果', dataIndex: 'status', width: 88 },
@@ -70,6 +85,32 @@ const editingJobKey = ref('')
 
 function statusText(enabled: boolean) {
   return enabled ? '启用' : '停用'
+}
+
+const canUpdateJob = computed(() => session.permissions.includes('system:job:update'))
+
+async function applyEnabled(record: ScheduledJobItem, enabled: boolean) {
+  rowBusy.value = record.id
+  try {
+    const updated = await updateScheduledJobStatus(record.id, enabled)
+    record.enabled = updated.enabled
+    message.success(enabled ? '已启用' : '已停用')
+  } finally {
+    rowBusy.value = null
+  }
+}
+
+function onEnabledSwitch(record: ScheduledJobItem, enabled: boolean) {
+  if (!enabled) {
+    Modal.confirm({
+      title: '停用后不再按计划执行，仍可手动执行',
+      okText: '停用',
+      cancelText: '取消',
+      onOk: () => applyEnabled(record, false),
+    })
+    return
+  }
+  void applyEnabled(record, true)
 }
 
 function resultText(status: string) {
@@ -190,6 +231,25 @@ async function runNow(record: ScheduledJobItem) {
   await load()
 }
 
+async function openCleanup() {
+  cleanRule.value = '30'
+  cleanStats.value = null
+  cleanOpen.value = true
+  cleanStats.value = await getJobLogStats()
+}
+
+async function doCleanup() {
+  cleaning.value = true
+  try {
+    const days = cleanRule.value === 'all' ? null : Number(cleanRule.value)
+    const result = await cleanupJobLogs(days)
+    message.success(result.deleted > 0 ? `已清理 ${result.deleted} 条日志` : '没有可清理的日志')
+    cleanOpen.value = false
+  } finally {
+    cleaning.value = false
+  }
+}
+
 async function openLogs(record: ScheduledJobItem) {
   logJobId.value = record.id
   logJobName.value = record.name
@@ -228,44 +288,59 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section class="page">
+  <section class="page page-fill">
     <h1>定时任务</h1>
     <div class="toolbar">
-      <a-button v-permission="'system:job:create'" type="primary" @click="openCreate">新增任务</a-button>
+      <a-space>
+        <a-button v-permission="'system:job:create'" type="primary" @click="openCreate">新增任务</a-button>
+        <a-button v-permission="'system:job:delete'" @click="openCleanup">清理日志</a-button>
+      </a-space>
     </div>
-    <a-table
-      row-key="id"
-      :columns="columns"
-      :data-source="items"
-      :loading="loading"
-      :pagination="{ current: page, pageSize, total, showSizeChanger: true }"
-      @change="onTableChange"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.dataIndex === 'enabled'">
-          {{ statusText(record.enabled) }}
+    <div ref="tableWrap" class="page-fill-body table-fill">
+      <a-table
+        row-key="id"
+        :columns="columns"
+        :data-source="items"
+        :loading="loading"
+        :scroll="{ x: 890, y: tableY }"
+        :pagination="{ current: page, pageSize, total, showSizeChanger: true }"
+        @change="onTableChange"
+      >
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.dataIndex === 'enabled'">
+            <div v-permission="'system:job:update'" class="cell-switch">
+              <a-switch
+                :checked="record.enabled"
+                :disabled="rowBusy === record.id"
+                checked-children="启用"
+                un-checked-children="停用"
+                @change="(checked: boolean) => onEnabledSwitch(record as ScheduledJobItem, checked)"
+              />
+            </div>
+            <span v-if="!canUpdateJob">{{ statusText(record.enabled) }}</span>
+          </template>
+          <template v-else-if="column.dataIndex === 'last_status'">
+            <span class="result" :data-ok="record.last_status === 'success' ? true : record.last_status ? false : undefined">
+              {{ resultText(record.last_status) }}
+            </span>
+          </template>
+          <template v-else-if="column.dataIndex === 'actions'">
+            <a-button v-permission="'system:job:update'" type="link" size="small" @click="openEdit(record)">编辑</a-button>
+            <a-button v-permission="'system:job:run'" type="link" size="small" @click="runNow(record)">执行</a-button>
+            <a-button type="link" size="small" @click="openLogs(record)">日志</a-button>
+            <a-popconfirm
+              v-if="!record.builtin"
+              title="删除后不再调度该任务"
+              ok-text="删除"
+              cancel-text="取消"
+              @confirm="remove(record)"
+            >
+              <a-button v-permission="'system:job:delete'" type="link" size="small">删除</a-button>
+            </a-popconfirm>
+          </template>
         </template>
-        <template v-else-if="column.dataIndex === 'last_status'">
-          <span class="result" :data-ok="record.last_status === 'success' ? true : record.last_status ? false : undefined">
-            {{ resultText(record.last_status) }}
-          </span>
-        </template>
-        <template v-else-if="column.dataIndex === 'actions'">
-          <a-button v-permission="'system:job:update'" type="link" size="small" @click="openEdit(record)">编辑</a-button>
-          <a-button v-permission="'system:job:run'" type="link" size="small" @click="runNow(record)">执行</a-button>
-          <a-button type="link" size="small" @click="openLogs(record)">日志</a-button>
-          <a-popconfirm
-            v-if="!record.builtin"
-            title="删除后不再调度该任务"
-            ok-text="删除"
-            cancel-text="取消"
-            @confirm="remove(record)"
-          >
-            <a-button v-permission="'system:job:delete'" type="link" size="small">删除</a-button>
-          </a-popconfirm>
-        </template>
-      </template>
-    </a-table>
+      </a-table>
+    </div>
 
     <a-modal
       v-model:open="editorOpen"
@@ -307,6 +382,23 @@ onMounted(async () => {
       </a-form>
     </a-modal>
 
+    <a-modal
+      v-model:open="cleanOpen"
+      title="清理执行日志"
+      :width="520"
+      :confirm-loading="cleaning"
+      ok-text="清理"
+      cancel-text="取消"
+      @ok="doCleanup"
+    >
+      <p class="clean-tip">清理后不可恢复，执行日志会从所有任务里删除。</p>
+      <a-radio-group v-model:value="cleanRule" class="clean-options">
+        <a-radio value="all">全部清理（共 {{ cleanStats?.total ?? 0 }} 条）</a-radio>
+        <a-radio value="7">清理 7 天前的日志（{{ cleanStats?.older_than_7d ?? 0 }} 条）</a-radio>
+        <a-radio value="30">清理 30 天前（1 个月）的日志（{{ cleanStats?.older_than_30d ?? 0 }} 条）</a-radio>
+      </a-radio-group>
+    </a-modal>
+
     <a-modal v-model:open="logOpen" :title="`执行日志 · ${logJobName}`" :width="760" :footer="null">
       <a-table
         row-key="id"
@@ -333,6 +425,23 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.clean-tip {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.clean-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cell-switch {
+  display: flex;
+  align-items: center;
+}
+
 .result[data-ok='true'] {
   color: #0e7c74;
 }

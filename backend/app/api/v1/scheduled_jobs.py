@@ -5,18 +5,21 @@ from app.api.deps import require_permission
 from app.core.response import ok
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.bodies import ScheduledJobCreate, ScheduledJobUpdate
+from app.schemas.bodies import EnabledUpdate, JobLogCleanup, ScheduledJobCreate, ScheduledJobUpdate
 from app.services.logs import write_log
 from app.services.scheduled_jobs import (
     available_handlers,
+    cleanup_job_logs,
     create_job,
     delete_job,
     get_job,
     job_dict,
+    job_log_stats,
     list_job_logs,
     list_jobs,
     log_dict,
     run_job,
+    set_job_enabled,
     update_job,
 )
 
@@ -37,6 +40,27 @@ def get_scheduled_jobs(
 @router.get("/handlers")
 def get_job_handlers(_user=Depends(require_permission("system:job:list"))):
     return ok(available_handlers())
+
+
+@router.get("/logs/stats")
+def get_job_log_stats(
+    db: Session = Depends(get_db),
+    _user=Depends(require_permission("system:job:list")),
+):
+    return ok(job_log_stats(db))
+
+
+@router.post("/logs/cleanup")
+def post_cleanup_job_logs(
+    body: JobLogCleanup,
+    db: Session = Depends(get_db),
+    actor: User = Depends(require_permission("system:job:delete")),
+):
+    deleted = cleanup_job_logs(db, body.days)
+    scope = "全部" if body.days is None else f"{body.days} 天前"
+    write_log(db, actor, "清理定时任务日志", f"{scope}，共 {deleted} 条")
+    db.commit()
+    return ok({"deleted": deleted})
 
 
 @router.post("")
@@ -78,6 +102,19 @@ def put_scheduled_job(
         body.remark,
     )
     write_log(db, actor, "编辑定时任务", row.name)
+    db.commit()
+    return ok(job_dict(row))
+
+
+@router.patch("/{job_id}/status")
+def patch_scheduled_job_status(
+    job_id: int,
+    body: EnabledUpdate,
+    db: Session = Depends(get_db),
+    actor: User = Depends(require_permission("system:job:update")),
+):
+    row = set_job_enabled(db, job_id, body.enabled)
+    write_log(db, actor, "启用定时任务" if body.enabled else "停用定时任务", row.name)
     db.commit()
     return ok(job_dict(row))
 

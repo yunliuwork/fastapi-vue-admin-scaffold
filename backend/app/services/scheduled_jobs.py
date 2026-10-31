@@ -1,7 +1,7 @@
 import json
-from datetime import timezone
+from datetime import timedelta, timezone
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
@@ -154,6 +154,16 @@ def update_job(
     return row
 
 
+def set_job_enabled(db: Session, job_id: int, enabled: bool) -> ScheduledJob:
+    row = get_job(db, job_id)
+    row.enabled = enabled
+    row.updated_at = utcnow()
+    db.commit()
+    db.refresh(row)
+    runtime.sync_job(row)
+    return row
+
+
 def delete_job(db: Session, job_id: int) -> None:
     row = get_job(db, job_id)
     if row.builtin:
@@ -181,6 +191,33 @@ def list_job_logs(db: Session, job_id: int, page: int, page_size: int) -> tuple[
         ).all()
     )
     return rows, total
+
+
+def job_log_stats(db: Session) -> dict:
+    now = utcnow()
+
+    def older_than(days: int) -> int:
+        stmt = (
+            select(func.count())
+            .select_from(ScheduledJobLog)
+            .where(ScheduledJobLog.started_at < now - timedelta(days=days))
+        )
+        return db.scalar(stmt) or 0
+
+    return {
+        "total": db.scalar(select(func.count()).select_from(ScheduledJobLog)) or 0,
+        "older_than_7d": older_than(7),
+        "older_than_30d": older_than(30),
+    }
+
+
+def cleanup_job_logs(db: Session, days: int | None) -> int:
+    stmt = delete(ScheduledJobLog)
+    if days is not None:
+        stmt = stmt.where(ScheduledJobLog.started_at < utcnow() - timedelta(days=days))
+    result = db.execute(stmt)
+    db.commit()
+    return result.rowcount or 0
 
 
 def run_job(db: Session, job_id: int) -> ScheduledJobLog:

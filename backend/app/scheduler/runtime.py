@@ -73,7 +73,7 @@ def trigger_label(job: ScheduledJob) -> str:
     return job.trigger_config
 
 
-def execute_job(job_id: int, *, trigger_mode: str = "scheduled") -> None:
+def execute_job(job_id: int, *, trigger_mode: str = "scheduled", force: bool = False) -> None:
     from app.db import session as db_session
 
     factory = db_session.session_factory
@@ -82,7 +82,8 @@ def execute_job(job_id: int, *, trigger_mode: str = "scheduled") -> None:
     db = factory()
     try:
         row = db.get(ScheduledJob, job_id)
-        if row is None or not row.enabled:
+        # 定时触发尊重启停；手动执行（force）在停用状态下也要能跑
+        if row is None or (not row.enabled and not force):
             return
         job_key = row.job_key
         job_name = row.name
@@ -156,9 +157,7 @@ def run_job_now(db: Session, job_id: int) -> ScheduledJobLog:
     row = db.get(ScheduledJob, job_id)
     if row is None:
         raise ValueError("任务不存在")
-    if not row.enabled:
-        raise ValueError("任务已停用")
-    execute_job(job_id, trigger_mode="manual")
+    execute_job(job_id, trigger_mode="manual", force=True)
     db.refresh(row)
     log = db.scalar(
         select(ScheduledJobLog)

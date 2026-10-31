@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { message } from 'ant-design-vue'
+import type { TableColumnsType } from 'ant-design-vue'
 import { createMenu, deleteMenu, listMenus, updateMenu, type MenuInput } from '@/api/menu'
 import type { MenuNode } from '@/api/types'
 import { reloadAccess } from '@/router/access'
 import { useRouter } from 'vue-router'
+import { useTableHeight } from '@/utils/useTableHeight'
 
 type MenuRow = Omit<MenuNode, 'children'> & { children?: MenuRow[] }
 
@@ -34,18 +36,22 @@ const typeOptions = [
   { value: 'menu', label: '页面' },
   { value: 'button', label: '按钮' },
 ]
-const statusOptions = [
-  { value: 'active', label: '正常' },
-  { value: 'disabled', label: '停用' },
-]
-const columns = [
-  { title: '名称', dataIndex: 'name' },
+const tableWrap = ref<HTMLElement | null>(null)
+const tableY = useTableHeight(tableWrap)
+const columns: TableColumnsType = [
+  { title: '名称', dataIndex: 'name', width: 170, ellipsis: true },
   { title: '类型', dataIndex: 'menu_type', width: 90 },
-  { title: '路径', dataIndex: 'path' },
-  { title: '权限标识', dataIndex: 'permission' },
-  { title: '排序', dataIndex: 'sort', width: 80 },
-  { title: '操作', dataIndex: 'actions', width: 140 },
+  { title: '路径', dataIndex: 'path', width: 190, ellipsis: true },
+  { title: '权限标识', dataIndex: 'permission', width: 210, ellipsis: true },
+  { title: '排序', dataIndex: 'sort', width: 70 },
+  { title: '操作', dataIndex: 'actions', width: 140, fixed: 'right' },
 ]
+const statusActive = computed({
+  get: () => form.status === 'active',
+  set: (value: boolean) => {
+    form.status = value ? 'active' : 'disabled'
+  },
+})
 const typeLabel: Record<MenuNode['menu_type'], string> = {
   directory: '目录',
   menu: '页面',
@@ -215,7 +221,7 @@ onMounted(load)
 </script>
 
 <template>
-  <section class="page">
+  <section class="page page-fill">
     <h1>菜单管理</h1>
     <div class="toolbar">
       <div class="toolbar-left">
@@ -227,34 +233,39 @@ onMounted(load)
       </div>
       <a-button v-permission="'system:menu:create'" type="primary" @click="openCreate">新增菜单</a-button>
     </div>
-    <a-table
-      :key="tableKey"
-      v-model:expanded-row-keys="expandedRowKeys"
-      row-key="id"
-      :columns="columns"
-      :data-source="rows"
-      :loading="loading"
-      :pagination="false"
-      :custom-row="customRow"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.dataIndex === 'menu_type'">
-          {{ typeLabel[record.menu_type as MenuNode['menu_type']] }}
+    <div ref="tableWrap" class="page-fill-body table-fill">
+      <a-table
+        :key="tableKey"
+        v-model:expanded-row-keys="expandedRowKeys"
+        row-key="id"
+        :columns="columns"
+        :data-source="rows"
+        :loading="loading"
+        :scroll="{ x: 890, y: tableY }"
+        :pagination="false"
+        :custom-row="customRow"
+      >
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.dataIndex === 'menu_type'">
+            <a-tag class="type-tag" :class="`type-${record.menu_type}`">
+              {{ typeLabel[record.menu_type as MenuNode['menu_type']] }}
+            </a-tag>
+          </template>
+          <template v-else-if="column.dataIndex === 'actions'">
+            <a-button v-permission="'system:menu:update'" type="link" size="small" @click="openEdit(record)">编辑</a-button>
+            <a-popconfirm
+              v-if="!record.children?.length"
+              title="删除这个菜单？"
+              ok-text="删除"
+              cancel-text="取消"
+              @confirm="remove(record)"
+            >
+              <a-button v-permission="'system:menu:delete'" type="link" size="small">删除</a-button>
+            </a-popconfirm>
+          </template>
         </template>
-        <template v-else-if="column.dataIndex === 'actions'">
-          <a-button v-permission="'system:menu:update'" type="link" size="small" @click="openEdit(record)">编辑</a-button>
-          <a-popconfirm
-            v-if="!record.children?.length"
-            title="删除这个菜单？"
-            ok-text="删除"
-            cancel-text="取消"
-            @confirm="remove(record)"
-          >
-            <a-button v-permission="'system:menu:delete'" type="link" size="small">删除</a-button>
-          </a-popconfirm>
-        </template>
-      </template>
-    </a-table>
+      </a-table>
+    </div>
 
     <a-modal
       v-model:open="editorOpen"
@@ -294,7 +305,7 @@ onMounted(load)
           <a-switch v-model:checked="form.visible" />
         </a-form-item>
         <a-form-item label="状态">
-          <a-select v-model:value="form.status" :options="statusOptions" />
+          <a-switch v-model:checked="statusActive" checked-children="正常" un-checked-children="停用" />
         </a-form-item>
       </a-form>
     </a-modal>

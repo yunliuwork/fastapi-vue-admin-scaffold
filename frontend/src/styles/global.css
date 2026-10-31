@@ -84,13 +84,91 @@ button:focus-visible {
 .page .ant-table-wrapper,
 .page .ant-table,
 .page .ant-table-container,
-.page .ant-table-content,
-.page .ant-table-content > table {
+.page .ant-table-content {
   width: 100% !important;
 }
 
-.page .ant-table-content > table {
+/* 固定列宽布局。但不要给 table 写 width: 100%!important：
+   那会压掉 antd 为 scroll.x 写入的 width: <x>; min-width: 100%，
+   窄屏时表格既不横向滚动、表头表体也会错位。 */
+.page .ant-table-content > table,
+.page .ant-table-header > table,
+.page .ant-table-body > table {
   table-layout: fixed !important;
+}
+
+/* 列表页填满内容区：页头、工具条不参与拉伸，只让表格区域吃剩余高度 */
+.page-fill {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
+}
+
+.page-fill > h1,
+.page-fill > .toolbar {
+  flex: none;
+  margin-bottom: 0;
+}
+
+.page-fill-body {
+  flex: 1;
+  min-height: 0;
+}
+
+/* 表格卡片撑满可用高度：表头固定、表体自己滚、分页钉在卡片底部 */
+.table-fill {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.table-fill > .ant-table-wrapper {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.table-fill .ant-spin-nested-loading,
+.table-fill .ant-spin-container {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.table-fill .ant-table {
+  flex: 1;
+  min-height: 0;
+}
+
+/* 表头 + 表体撑满卡片；表体少于满页时也占满，横向滚动条落在分页上沿 */
+.table-fill .ant-table-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.table-fill .ant-table-header {
+  flex: none;
+}
+
+.table-fill .ant-table-body {
+  flex: 1;
+  min-height: 0;
+  overscroll-behavior: contain;
+}
+
+/* 固定操作列压住滚动内容时给一条分隔线，避免看起来像被裁掉 */
+.table-fill .ant-table-cell-fix-right-first {
+  border-left: 1px solid var(--line);
+}
+
+.table-fill .ant-table-pagination {
+  flex: none;
+  margin: 12px 16px;
 }
 
 .form-grid.ant-form {
@@ -117,6 +195,30 @@ button:focus-visible {
   .form-grid .span-2 {
     grid-column: auto;
   }
+}
+
+/* 菜单类型三色：目录=蓝、页面=青、按钮=橙，列表和分配菜单里统一使用 */
+.type-tag.ant-tag {
+  margin-inline-end: 0;
+  padding: 0 7px;
+  border: 0;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.type-tag.type-directory {
+  color: #1b5fc1;
+  background: #ecf3ff;
+}
+
+.type-tag.type-menu {
+  color: #0b6b64;
+  background: #e6f4f1;
+}
+
+.type-tag.type-button {
+  color: #a85a00;
+  background: #fff2e0;
 }
 
 .page h1 {

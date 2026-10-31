@@ -55,16 +55,12 @@ def test_failed_login_keeps_status_and_hides_the_password(client):
 
 
 def test_operation_log_requires_permission(client):
-    from tests.helpers import find_menu
+    from tests.helpers import create_role, find_menu
 
     admin = login(client)
     user_menu = find_menu(client.get("/api/v1/menus", headers=admin).json()["data"], "system:user:list")
-    role = client.post(
-        "/api/v1/roles",
-        headers=admin,
-        json={"name": "只读", "code": "reader", "remark": "", "status": "active", "menu_ids": [user_menu["id"]]},
-    )
-    role_id = role.json()["data"]["id"]
+    role = create_role(client, admin, name="只读", code="reader", menu_ids=[user_menu["id"]])
+    role_id = role["id"]
     client.post(
         "/api/v1/users",
         headers=admin,

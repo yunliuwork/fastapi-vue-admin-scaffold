@@ -58,7 +58,9 @@ class RoleWrite(BaseModel):
     name: str = Field(min_length=1, max_length=64)
     code: str = Field(min_length=1, max_length=64, pattern=r"^[a-z][a-z0-9_]*$")
     remark: str = Field(default="", max_length=255)
-    status: Literal["active", "disabled"] = "active"
+
+
+class RoleMenusUpdate(BaseModel):
     menu_ids: list[int] = Field(default_factory=list)
 
 
@@ -79,6 +81,14 @@ class ScheduledJobUpdate(BaseModel):
     params: str = Field(default="{}", max_length=512)
     enabled: bool = True
     remark: str = Field(default="", max_length=255)
+
+
+class EnabledUpdate(BaseModel):
+    enabled: bool
+
+
+class JobLogCleanup(BaseModel):
+    days: int | None = Field(default=None, ge=1, le=3650)
 
 
 class MenuWrite(BaseModel):

@@ -113,6 +113,7 @@ async function savePassword() {
       :style="{ background: '#163033' }"
       :width="216"
       :collapsed-width="72"
+      breakpoint="xl"
       theme="dark"
       :trigger="null"
       collapsible
@@ -175,8 +176,13 @@ async function savePassword() {
 
 <style scoped>
 .shell {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background: var(--paper);
+}
+
+.shell > .ant-layout {
+  min-width: 0;
 }
 
 .sider {
@@ -220,7 +226,10 @@ async function savePassword() {
 }
 
 .content {
+  flex: 1;
+  min-height: 0;
   padding: 24px;
+  overflow: auto;
 }
 
 @media (max-width: 720px) {

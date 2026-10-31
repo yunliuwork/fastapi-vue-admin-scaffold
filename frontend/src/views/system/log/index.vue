@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
+import type { TableColumnsType } from 'ant-design-vue'
 import { listOperationLogs, type OperationLogItem } from '@/api/log'
+import { useTableHeight } from '@/utils/useTableHeight'
 
 const loading = ref(false)
 const items = ref<OperationLogItem[]>([])
@@ -14,13 +16,15 @@ const outcomeOptions = [
   { value: 'success', label: '成功' },
   { value: 'failure', label: '失败' },
 ]
-const columns = [
-  { title: '操作人', dataIndex: 'username', width: 88, ellipsis: true },
-  { title: '动作', dataIndex: 'action', width: 96, ellipsis: true },
-  { title: '对象', dataIndex: 'target', ellipsis: true },
-  { title: '状态', dataIndex: 'status_code', width: 72 },
-  { title: '时间', dataIndex: 'created_at', width: 188 },
-  { title: '操作', dataIndex: 'actions', width: 72 },
+const tableWrap = ref<HTMLElement | null>(null)
+const tableY = useTableHeight(tableWrap)
+const columns: TableColumnsType = [
+  { title: '操作人', dataIndex: 'username', width: 90, ellipsis: true },
+  { title: '动作', dataIndex: 'action', width: 110, ellipsis: true },
+  { title: '对象', dataIndex: 'target', width: 240, ellipsis: true },
+  { title: '状态', dataIndex: 'status_code', width: 80 },
+  { title: '时间', dataIndex: 'created_at', width: 170 },
+  { title: '操作', dataIndex: 'actions', width: 70, fixed: 'right' },
 ]
 
 function statusText(code: number | null) {
@@ -74,7 +78,7 @@ onMounted(load)
 </script>
 
 <template>
-  <section class="page">
+  <section class="page page-fill">
     <h1>操作日志</h1>
     <div class="toolbar">
       <a-form layout="inline" :model="query" @finish="search">
@@ -98,25 +102,28 @@ onMounted(load)
         </a-form-item>
       </a-form>
     </div>
-    <a-table
-      row-key="id"
-      :columns="columns"
-      :data-source="items"
-      :loading="loading"
-      :pagination="{ current: page, pageSize, total, showSizeChanger: true }"
-      @change="onTableChange"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.dataIndex === 'status_code'">
-          <span class="status" :data-ok="record.status_code == null ? undefined : record.status_code < 400">
-            {{ statusText(record.status_code) }}
-          </span>
+    <div ref="tableWrap" class="page-fill-body table-fill">
+      <a-table
+        row-key="id"
+        :columns="columns"
+        :data-source="items"
+        :loading="loading"
+        :scroll="{ x: 760, y: tableY }"
+        :pagination="{ current: page, pageSize, total, showSizeChanger: true }"
+        @change="onTableChange"
+      >
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.dataIndex === 'status_code'">
+            <span class="status" :data-ok="record.status_code == null ? undefined : record.status_code < 400">
+              {{ statusText(record.status_code) }}
+            </span>
+          </template>
+          <template v-else-if="column.dataIndex === 'actions'">
+            <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
+          </template>
         </template>
-        <template v-else-if="column.dataIndex === 'actions'">
-          <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
-        </template>
-      </template>
-    </a-table>
+      </a-table>
+    </div>
 
     <a-modal v-model:open="detailOpen" title="日志详情" :width="720" :footer="null">
       <dl v-if="current" class="detail">

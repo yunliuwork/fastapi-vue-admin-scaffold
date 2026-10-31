@@ -2,7 +2,10 @@ import type { Router, RouteRecordRaw } from 'vue-router'
 import type { MenuNode } from '@/api/types'
 import { useSessionStore } from '@/stores/session'
 
-const viewModules = import.meta.glob('../views/**/*.vue') as Record<string, () => Promise<unknown>>
+const viewModules = import.meta.glob('../views/**/*.vue') as Record<
+  string,
+  (() => Promise<unknown>) | undefined
+>
 
 function walkMenus(nodes: MenuNode[], visit: (node: MenuNode) => void) {
   nodes.forEach((node) => {
