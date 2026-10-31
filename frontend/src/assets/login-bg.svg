@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#2aa79b" stop-opacity="0.55" />
+      <stop offset="55%" stop-color="#0e7c74" stop-opacity="0.22" />
+      <stop offset="100%" stop-color="#163033" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="pool" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1d5c57" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#163033" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="900" fill="#163033" />
+  <circle cx="1460" cy="-40" r="520" fill="url(#glow)" />
+  <circle cx="80" cy="980" r="460" fill="url(#pool)" />
+  <circle cx="1460" cy="-40" r="340" fill="none" stroke="#f4f7f6" stroke-opacity="0.14" stroke-width="1.5" />
+  <circle cx="1460" cy="-40" r="210" fill="none" stroke="#f4f7f6" stroke-opacity="0.08" stroke-width="1" />
+  <circle cx="180" cy="760" r="180" fill="none" stroke="#9fe0d6" stroke-opacity="0.18" stroke-width="1.5" />
+  <path d="M-40 620C280 540 520 700 860 640C1160 588 1360 500 1680 560" fill="none" stroke="#f4f7f6" stroke-opacity="0.1" stroke-width="1.5" />
+</svg>

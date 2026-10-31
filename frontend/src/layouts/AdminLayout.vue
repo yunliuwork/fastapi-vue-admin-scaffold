@@ -1,0 +1,231 @@
+<script setup lang="ts">
+import { computed, h, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { message } from 'ant-design-vue'
+import { MenuFoldOutlined, MenuUnfoldOutlined, DownOutlined } from '@ant-design/icons-vue'
+import type { ItemType } from 'ant-design-vue'
+import { useSessionStore } from '@/stores/session'
+import { resetAccessRoutes } from '@/router/access'
+import { resolveIcon } from '@/utils/icons'
+import type { MenuNode } from '@/api/types'
+
+const route = useRoute()
+const router = useRouter()
+const session = useSessionStore()
+const collapsed = ref(false)
+const passwordOpen = ref(false)
+const savingPassword = ref(false)
+const passwordForm = reactive({ old_password: '', new_password: '' })
+const openKeys = ref<string[]>(['/system'])
+const selectedKeys = computed(() => [route.path])
+
+function toItems(nodes: MenuNode[]): ItemType[] {
+  return nodes.map((node) => {
+    const key = node.path || `dir-${node.id}`
+    const item: ItemType = {
+      key,
+      label: node.name,
+      icon: node.icon ? () => h(resolveIcon(node.icon)) : undefined,
+    }
+    if (node.children?.length) {
+      return { ...item, children: toItems(node.children) }
+    }
+    return item
+  })
+}
+
+const menuItems = computed(() => toItems(session.menus))
+
+function isPage(nodes: MenuNode[], key: string): boolean {
+  return nodes.some((node) => {
+    if (node.menu_type === 'menu' && node.path === key) {
+      return true
+    }
+    return node.children?.length ? isPage(node.children, key) : false
+  })
+}
+
+function onMenuClick(info: { key: string | number }) {
+  const key = String(info.key)
+  if (isPage(session.menus, key)) {
+    router.push(key)
+  }
+}
+
+function onOpenChange(keys: (string | number)[]) {
+  openKeys.value = keys.map(String)
+}
+
+watch(
+  () => route.path,
+  (path) => {
+    if (path.startsWith('/system') && !openKeys.value.includes('/system')) {
+      openKeys.value = [...openKeys.value, '/system']
+    }
+  },
+  { immediate: true },
+)
+
+function onAccountMenu(info: { key: string | number }) {
+  if (info.key === 'password') {
+    passwordOpen.value = true
+  }
+  if (info.key === 'logout') {
+    void logout()
+  }
+}
+
+async function logout() {
+  resetAccessRoutes(router)
+  await session.signOut()
+  router.push('/login')
+}
+
+async function savePassword() {
+  if (!passwordForm.old_password) {
+    message.error('请填写原密码')
+    return Promise.reject(new Error('请填写原密码'))
+  }
+  if (passwordForm.new_password.length < 6) {
+    message.error('新密码至少 6 位')
+    return Promise.reject(new Error('新密码至少 6 位'))
+  }
+  savingPassword.value = true
+  try {
+    await session.changePassword(passwordForm.old_password, passwordForm.new_password)
+    message.success('已保存')
+    passwordOpen.value = false
+    passwordForm.old_password = ''
+    passwordForm.new_password = ''
+  } catch (error) {
+    return Promise.reject(error)
+  } finally {
+    savingPassword.value = false
+  }
+}
+</script>
+
+<template>
+  <a-layout class="shell">
+    <a-layout-sider
+      v-model:collapsed="collapsed"
+      class="sider"
+      :style="{ background: '#163033' }"
+      :width="216"
+      :collapsed-width="72"
+      theme="dark"
+      :trigger="null"
+      collapsible
+    >
+      <div class="brand" :title="'fastapi-vue-admin-scaffold'">
+        {{ collapsed ? 'AS' : 'Admin Scaffold' }}
+      </div>
+      <a-menu
+        theme="dark"
+        mode="inline"
+        :selected-keys="selectedKeys"
+        :open-keys="openKeys"
+        :items="menuItems"
+        @openChange="onOpenChange"
+        @click="onMenuClick"
+      />
+    </a-layout-sider>
+    <a-layout>
+      <a-layout-header class="header">
+        <a-button type="text" aria-label="折叠菜单" @click="collapsed = !collapsed">
+          <MenuUnfoldOutlined v-if="collapsed" />
+          <MenuFoldOutlined v-else />
+        </a-button>
+        <a-dropdown :trigger="['click']" placement="bottomRight">
+          <button type="button" class="account">
+            <span>{{ session.profile?.nickname || session.profile?.username }}</span>
+            <DownOutlined />
+          </button>
+          <template #overlay>
+            <a-menu @click="onAccountMenu">
+              <a-menu-item key="password">修改密码</a-menu-item>
+              <a-menu-item key="logout">退出</a-menu-item>
+            </a-menu>
+          </template>
+        </a-dropdown>
+      </a-layout-header>
+      <a-layout-content class="content">
+        <router-view />
+      </a-layout-content>
+    </a-layout>
+  </a-layout>
+  <a-modal
+    v-model:open="passwordOpen"
+    title="修改密码"
+    ok-text="保存"
+    cancel-text="取消"
+    :confirm-loading="savingPassword"
+    @ok="savePassword"
+  >
+    <a-form layout="vertical" :model="passwordForm">
+      <a-form-item label="原密码">
+        <a-input-password v-model:value="passwordForm.old_password" autocomplete="current-password" />
+      </a-form-item>
+      <a-form-item label="新密码">
+        <a-input-password v-model:value="passwordForm.new_password" autocomplete="new-password" />
+      </a-form-item>
+    </a-form>
+  </a-modal>
+</template>
+
+<style scoped>
+.shell {
+  min-height: 100vh;
+  background: var(--paper);
+}
+
+.sider {
+  background: var(--ink);
+}
+
+.brand {
+  height: 56px;
+  padding: 0 20px;
+  color: #f4f7f6;
+  font-weight: 600;
+  line-height: 56px;
+  letter-spacing: 0.01em;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px 0 16px;
+  background: #f7faf9;
+  border-bottom: 1px solid var(--line);
+}
+
+.account {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.account:hover {
+  background: #e7eeed;
+}
+
+.content {
+  padding: 24px;
+}
+
+@media (max-width: 720px) {
+  .content {
+    padding: 16px;
+  }
+}
+</style>
