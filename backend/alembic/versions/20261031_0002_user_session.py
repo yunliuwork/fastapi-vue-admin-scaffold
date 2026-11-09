@@ -14,7 +14,7 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     op.add_column("users", sa.Column("token_version", sa.Integer(), nullable=False, server_default="0"))
     op.add_column("users", sa.Column("failed_login_count", sa.Integer(), nullable=False, server_default="0"))
-    op.add_column("users", sa.Column("locked_until", sa.DateTime(timezone=True), nullable=True))
+    op.add_column("users", sa.Column("locked_until", sa.BigInteger(), nullable=True))
 
 
 def downgrade() -> None:

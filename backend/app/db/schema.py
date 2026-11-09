@@ -120,7 +120,7 @@ def ensure_user_columns(engine) -> None:
         statements.append("ALTER TABLE sys_users ADD COLUMN token_version INTEGER NOT NULL DEFAULT 0")
     if "failed_login_count" not in names:
         statements.append("ALTER TABLE sys_users ADD COLUMN failed_login_count INTEGER NOT NULL DEFAULT 0")
-    locked_type = "DATETIME" if engine.dialect.name == "sqlite" else "TIMESTAMPTZ"
+    locked_type = "INTEGER" if engine.dialect.name == "sqlite" else "BIGINT"
     if "locked_until" not in names:
         statements.append(f"ALTER TABLE sys_users ADD COLUMN locked_until {locked_type}")
     if "totp_secret" not in names:

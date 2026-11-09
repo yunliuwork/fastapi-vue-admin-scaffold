@@ -5,7 +5,8 @@ from app.core.errors import AppError
 from app.core.security import hash_password
 from app.services.logs import write_log
 from app.models.role import Role
-from app.models.user import User, utcnow
+from app.core.time import now_ms
+from app.models.user import User
 
 
 def user_dict(user: User) -> dict:
@@ -16,7 +17,7 @@ def user_dict(user: User) -> dict:
         "status": user.status,
         "is_superuser": user.is_superuser,
         "roles": [{"id": role.id, "name": role.name, "code": role.code} for role in user.roles],
-        "created_at": user.created_at.isoformat(),
+        "created_at": user.created_at,
         "totp_required": user.totp_required,
         "totp_enabled": user.totp_enabled,
     }
@@ -75,7 +76,7 @@ def create_user(
     existing = db.scalar(select(User).where(User.username == username))
     if existing is not None:
         raise AppError(409, "用户名已存在")
-    now = utcnow()
+    now = now_ms()
     user = User(
         username=username,
         password_hash=hash_password(password),
@@ -112,7 +113,7 @@ def update_user(
     user.status = status
     user.roles = load_roles(db, role_ids)
     _apply_totp_required(user, totp_required)
-    user.updated_at = utcnow()
+    user.updated_at = now_ms()
     write_log(db, actor, "编辑用户", user.username)
     db.commit()
     db.refresh(user)
@@ -125,7 +126,7 @@ def update_status(db: Session, user_id: int, status: str, actor: User) -> User:
     if user.is_superuser and status == "disabled":
         raise AppError(400, "不能停用超级管理员")
     user.status = status
-    user.updated_at = utcnow()
+    user.updated_at = now_ms()
     write_log(db, actor, "启用用户" if status == "active" else "停用用户", user.username)
     db.commit()
     db.refresh(user)
@@ -141,7 +142,7 @@ def reset_password(db: Session, user_id: int, password: str, actor: User) -> Non
     user.locked_until = None
     user.totp_secret = None
     user.totp_enabled = False
-    user.updated_at = utcnow()
+    user.updated_at = now_ms()
     write_log(db, actor, "重置密码", user.username)
     db.commit()
 
@@ -154,7 +155,7 @@ def reset_totp_binding(db: Session, user_id: int, actor: User) -> User:
     user.totp_secret = None
     user.totp_enabled = False
     user.token_version += 1
-    user.updated_at = utcnow()
+    user.updated_at = now_ms()
     write_log(db, actor, "重置谷歌验证器", user.username)
     db.commit()
     db.refresh(user)

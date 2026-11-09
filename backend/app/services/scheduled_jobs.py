@@ -1,14 +1,14 @@
 import json
-from datetime import timedelta, timezone
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
+from app.core.time import MS_PER_DAY, now_ms
 from app.core.errors import AppError
 from app.jobs.registry import get_handler, handler_options
 from app.models.scheduled_job import ScheduledJob, ScheduledJobLog
-from app.models.user import User, utcnow
+from app.models.user import User
 from app.scheduler import runtime
 
 
@@ -56,10 +56,10 @@ def job_dict(row: ScheduledJob) -> dict:
         "builtin": row.builtin,
         "remark": row.remark,
         "trigger_label": runtime.trigger_label(row),
-        "last_run_at": _format_time(row.last_run_at),
+        "last_run_at": row.last_run_at,
         "last_status": row.last_status or "",
-        "created_at": _format_time(row.created_at),
-        "updated_at": _format_time(row.updated_at),
+        "created_at": row.created_at,
+        "updated_at": row.updated_at,
     }
 
 
@@ -71,8 +71,8 @@ def log_dict(row: ScheduledJobLog) -> dict:
         "status": row.status,
         "message": row.message,
         "trigger_mode": row.trigger_mode,
-        "started_at": _format_time(row.started_at),
-        "finished_at": _format_time(row.finished_at),
+        "started_at": row.started_at,
+        "finished_at": row.finished_at,
     }
 
 
@@ -147,7 +147,7 @@ def update_job(
     row.params = params or "{}"
     row.enabled = enabled
     row.remark = remark
-    row.updated_at = utcnow()
+    row.updated_at = now_ms()
     db.commit()
     db.refresh(row)
     runtime.sync_job(row)
@@ -157,7 +157,7 @@ def update_job(
 def set_job_enabled(db: Session, job_id: int, enabled: bool) -> ScheduledJob:
     row = get_job(db, job_id)
     row.enabled = enabled
-    row.updated_at = utcnow()
+    row.updated_at = now_ms()
     db.commit()
     db.refresh(row)
     runtime.sync_job(row)
@@ -194,13 +194,13 @@ def list_job_logs(db: Session, job_id: int, page: int, page_size: int) -> tuple[
 
 
 def job_log_stats(db: Session) -> dict:
-    now = utcnow()
+    now = now_ms()
 
     def older_than(days: int) -> int:
         stmt = (
             select(func.count())
             .select_from(ScheduledJobLog)
-            .where(ScheduledJobLog.started_at < now - timedelta(days=days))
+            .where(ScheduledJobLog.started_at < now - days * MS_PER_DAY)
         )
         return db.scalar(stmt) or 0
 
@@ -214,7 +214,7 @@ def job_log_stats(db: Session) -> dict:
 def cleanup_job_logs(db: Session, days: int | None) -> int:
     stmt = delete(ScheduledJobLog)
     if days is not None:
-        stmt = stmt.where(ScheduledJobLog.started_at < utcnow() - timedelta(days=days))
+        stmt = stmt.where(ScheduledJobLog.started_at < now_ms() - days * MS_PER_DAY)
     result = db.execute(stmt)
     db.commit()
     return result.rowcount or 0
@@ -253,9 +253,3 @@ def _validate_trigger(trigger_type: str, trigger_config: str) -> None:
         raise AppError(400, "触发配置无效") from exc
 
 
-def _format_time(value) -> str:
-    if value is None:
-        return ""
-    if value.tzinfo is None:
-        value = value.replace(tzinfo=timezone.utc)
-    return value.astimezone().strftime("%Y-%m-%d %H:%M:%S")

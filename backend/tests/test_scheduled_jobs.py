@@ -76,17 +76,15 @@ def test_scheduled_job_log_cleanup(client):
     assert stats.json()["data"]["older_than_7d"] == 0
 
     # 把最新一条日志改成 10 天前，验证按天清理
-    from datetime import timedelta
-
     from sqlalchemy import select
 
+    from app.core.time import MS_PER_DAY, now_ms
     from app.db import session as db_session
     from app.models.scheduled_job import ScheduledJobLog
-    from app.models.user import utcnow
 
     db = db_session.session_factory()
     row = db.scalars(select(ScheduledJobLog).order_by(ScheduledJobLog.id.desc())).first()
-    row.started_at = utcnow() - timedelta(days=10)
+    row.started_at = now_ms() - 10 * MS_PER_DAY
     db.commit()
     db.close()
 

@@ -61,6 +61,8 @@ uv run pytest
 
 系统内置表统一使用 `sys_` 前缀：`sys_users`、`sys_roles`、`sys_menus`、`sys_user_roles`、`sys_role_menus`、`sys_operation_logs`、`sys_scheduled_jobs`、`sys_scheduled_job_logs`。
 
+所有时间字段统一存 **13 位毫秒时间戳**（`BIGINT`，epoch milliseconds），接口直接返回数字，前端用 `src/utils/time.ts` 的 `formatDateTime` 显示。旧版本用 `DATETIME` 建的库不兼容，删除 `backend/dev.db`（或重建 Postgres 库）后重启即可，脚手架不迁移历史数据。
+
 旧版本建的库（没有前缀）在首次启动时会自动原地重命名，数据保留；使用 Alembic 的库执行 `uv run alembic upgrade head`（迁移 `20261031_0006`）即可。
 
 ## 目录

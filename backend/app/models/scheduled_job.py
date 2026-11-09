@@ -1,10 +1,8 @@
-from datetime import datetime
-
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text
+from sqlalchemy import BigInteger, Boolean, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.time import now_ms
 from app.db.base import Base
-from app.models.user import utcnow
 
 
 class ScheduledJob(Base):
@@ -19,10 +17,10 @@ class ScheduledJob(Base):
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     builtin: Mapped[bool] = mapped_column(Boolean, default=False)
     remark: Mapped[str] = mapped_column(String(255), default="")
-    last_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_run_at: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     last_status: Mapped[str] = mapped_column(String(16), default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+    created_at: Mapped[int] = mapped_column(BigInteger, default=now_ms)
+    updated_at: Mapped[int] = mapped_column(BigInteger, default=now_ms, onupdate=now_ms)
 
     logs: Mapped[list["ScheduledJobLog"]] = relationship(back_populates="job")
 
@@ -36,7 +34,7 @@ class ScheduledJobLog(Base):
     status: Mapped[str] = mapped_column(String(16))
     message: Mapped[str] = mapped_column(Text, default="")
     trigger_mode: Mapped[str] = mapped_column(String(16), default="scheduled")
-    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
-    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    started_at: Mapped[int] = mapped_column(BigInteger, default=now_ms, index=True)
+    finished_at: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 
     job: Mapped[ScheduledJob] = relationship(back_populates="logs")

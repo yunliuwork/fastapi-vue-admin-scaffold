@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.core.config import Settings
 from app.jobs.registry import call_handler
 from app.models.scheduled_job import ScheduledJob, ScheduledJobLog
-from app.models.user import utcnow
+from app.core.time import now_ms
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +91,7 @@ def execute_job(job_id: int, *, trigger_mode: str = "scheduled", force: bool = F
     finally:
         db.close()
 
-    started = utcnow()
+    started = now_ms()
     status = "success"
     message = "执行完成"
     try:
@@ -101,7 +101,7 @@ def execute_job(job_id: int, *, trigger_mode: str = "scheduled", force: bool = F
         message = str(exc)[:2000]
         logger.exception("scheduled job %s failed", job_key)
 
-    finished = utcnow()
+    finished = now_ms()
     db = factory()
     try:
         row = db.get(ScheduledJob, job_id)

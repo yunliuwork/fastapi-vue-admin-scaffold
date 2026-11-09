@@ -11,7 +11,7 @@ export interface UserItem {
   status: 'active' | 'disabled'
   is_superuser: boolean
   roles: RoleBrief[]
-  created_at: string
+  created_at: number
   totp_required?: boolean
   totp_enabled?: boolean
 }

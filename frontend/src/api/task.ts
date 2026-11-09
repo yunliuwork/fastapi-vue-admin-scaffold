@@ -12,7 +12,7 @@ export interface ScheduledJobItem {
   builtin: boolean
   remark: string
   trigger_label: string
-  last_run_at: string
+  last_run_at: number | null
   last_status: string
 }
 
@@ -28,8 +28,8 @@ export interface ScheduledJobLogItem {
   status: string
   message: string
   trigger_mode: string
-  started_at: string
-  finished_at: string
+  started_at: number
+  finished_at: number | null
 }
 
 export function listScheduledJobs(params: { page: number; page_size: number }) {

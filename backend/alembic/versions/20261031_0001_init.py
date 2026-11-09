@@ -20,8 +20,8 @@ def upgrade() -> None:
         sa.Column("nickname", sa.String(length=64), nullable=False, server_default=""),
         sa.Column("status", sa.String(length=16), nullable=False, server_default="active"),
         sa.Column("is_superuser", sa.Boolean(), nullable=False, server_default=sa.false()),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("created_at", sa.BigInteger(), nullable=False),
+        sa.Column("updated_at", sa.BigInteger(), nullable=False),
     )
     op.create_index("ix_users_username", "users", ["username"], unique=True)
 

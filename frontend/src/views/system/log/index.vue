@@ -2,6 +2,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import type { TableColumnsType } from 'ant-design-vue'
 import { listOperationLogs, type OperationLogItem } from '@/api/log'
+import { formatDateTime } from '@/utils/time'
 import { useTableHeight } from '@/utils/useTableHeight'
 
 const loading = ref(false)
@@ -113,7 +114,10 @@ onMounted(load)
         @change="onTableChange"
       >
         <template #bodyCell="{ column, record }">
-          <template v-if="column.dataIndex === 'status_code'">
+          <template v-if="column.dataIndex === 'created_at'">
+            {{ formatDateTime(record.created_at) }}
+          </template>
+          <template v-else-if="column.dataIndex === 'status_code'">
             <span class="status" :data-ok="record.status_code == null ? undefined : record.status_code < 400">
               {{ statusText(record.status_code) }}
             </span>
@@ -149,7 +153,7 @@ onMounted(load)
         </div>
         <div>
           <dt>时间</dt>
-          <dd>{{ current.created_at }}</dd>
+          <dd>{{ formatDateTime(current.created_at) }}</dd>
         </div>
         <div class="span">
           <dt>参数</dt>

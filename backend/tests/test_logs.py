@@ -21,7 +21,8 @@ def test_creating_a_user_is_written_to_the_operation_log(client):
     assert "editor" in row["params"]
     assert "secret12" not in row["params"]
     assert "editor" in row["response"]
-    assert row["created_at"]
+    assert isinstance(row["created_at"], int)
+    assert len(str(row["created_at"])) == 13
 
 
 def test_operation_log_can_be_filtered_by_operator(client):

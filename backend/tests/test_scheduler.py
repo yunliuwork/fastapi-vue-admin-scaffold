@@ -1,9 +1,9 @@
-from datetime import timedelta
 
 from sqlalchemy import select
 
 from app.jobs.tasks import clear_expired_login_locks
-from app.models.user import User, utcnow
+from app.core.time import MS_PER_MINUTE, now_ms
+from app.models.user import User
 
 
 def test_clear_expired_login_locks_resets_stale_lock(client):
@@ -14,7 +14,7 @@ def test_clear_expired_login_locks_resets_stale_lock(client):
         user = db.scalar(select(User).where(User.username == "admin"))
         assert user is not None
         user.failed_login_count = 5
-        user.locked_until = utcnow() - timedelta(minutes=1)
+        user.locked_until = now_ms() - MS_PER_MINUTE
         db.commit()
     finally:
         db.close()

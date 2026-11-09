@@ -10,7 +10,7 @@ export interface OperationLogItem {
   params: string
   response: string
   status_code: number | null
-  created_at: string
+  created_at: number
 }
 
 export function listOperationLogs(params: {

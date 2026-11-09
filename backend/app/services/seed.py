@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 from app.core.security import hash_password
 from app.models.menu import Menu
 from app.models.role import Role
-from app.models.user import User, utcnow
+from app.core.time import now_ms
+from app.models.user import User
 
 
 SEED_MENUS = [
@@ -124,7 +125,7 @@ def seed_if_empty(db: Session) -> None:
     for payload in SEED_MENUS:
         _add_menu(db, payload)
     menus = list(db.scalars(select(Menu)).all())
-    now = utcnow()
+    now = now_ms()
     role = Role(name="超级管理员", code="super_admin", remark="拥有全部菜单", status="active", menus=menus)
     admin = User(
         username="admin",

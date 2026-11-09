@@ -18,6 +18,7 @@ import {
   type ScheduledJobLogItem,
 } from '@/api/task'
 import { useSessionStore } from '@/stores/session'
+import { formatDateTime } from '@/utils/time'
 import { useTableHeight } from '@/utils/useTableHeight'
 
 const loading = ref(false)
@@ -307,7 +308,10 @@ onMounted(async () => {
         @change="onTableChange"
       >
         <template #bodyCell="{ column, record }">
-          <template v-if="column.dataIndex === 'enabled'">
+          <template v-if="column.dataIndex === 'last_run_at'">
+            {{ formatDateTime(record.last_run_at) }}
+          </template>
+          <template v-else-if="column.dataIndex === 'enabled'">
             <div v-permission="'system:job:update'" class="cell-switch">
               <a-switch
                 :checked="record.enabled"
@@ -410,7 +414,10 @@ onMounted(async () => {
         @change="onLogTableChange"
       >
         <template #bodyCell="{ column, record }">
-          <template v-if="column.dataIndex === 'trigger_mode'">
+          <template v-if="column.dataIndex === 'started_at'">
+            {{ formatDateTime(record.started_at) }}
+          </template>
+          <template v-else-if="column.dataIndex === 'trigger_mode'">
             {{ triggerModeText(record.trigger_mode) }}
           </template>
           <template v-else-if="column.dataIndex === 'status'">

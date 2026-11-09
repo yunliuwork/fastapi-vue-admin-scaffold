@@ -1,12 +1,11 @@
-from datetime import timedelta
-
 from sqlalchemy import delete, update
 
 from app.core.config import Settings
 from app.db import session as db_session
 from app.jobs.registry import job
 from app.models.operation_log import OperationLog
-from app.models.user import User, utcnow
+from app.core.time import MS_PER_DAY, now_ms
+from app.models.user import User
 
 
 @job("clear_expired_login_locks", label="清理过期登录锁定")
@@ -16,7 +15,7 @@ def clear_expired_login_locks() -> None:
         return
     db = factory()
     try:
-        now = utcnow()
+        now = now_ms()
         db.execute(
             update(User)
             .where(User.locked_until.is_not(None))
@@ -38,7 +37,7 @@ def purge_old_operation_logs(retention_days: int | None = None) -> None:
         return
     db = factory()
     try:
-        cutoff = utcnow() - timedelta(days=days)
+        cutoff = now_ms() - days * MS_PER_DAY
         db.execute(delete(OperationLog).where(OperationLog.created_at < cutoff))
         db.commit()
     finally:

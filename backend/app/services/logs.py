@@ -1,12 +1,12 @@
 import json
-from datetime import timezone
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.context import client_ip, remember_log_id, request_params
 from app.models.operation_log import OperationLog
-from app.models.user import User, utcnow
+from app.core.time import now_ms
+from app.models.user import User
 
 _LIMIT = 4000
 
@@ -21,7 +21,7 @@ def write_log(db: Session, user: User | None, action: str, target: str) -> None:
         params=request_params.get()[:_LIMIT],
         response_body="",
         status_code=None,
-        created_at=utcnow(),
+        created_at=now_ms(),
     )
     db.add(row)
     db.flush()
@@ -57,7 +57,7 @@ def write_failure(
             params=request_params.get()[:_LIMIT],
             response_body=response[:_LIMIT],
             status_code=status_code,
-            created_at=utcnow(),
+            created_at=now_ms(),
         )
     )
     db.commit()
@@ -128,9 +128,6 @@ def list_logs(
 
 
 def log_dict(row: OperationLog) -> dict:
-    created = row.created_at
-    if created.tzinfo is None:
-        created = created.replace(tzinfo=timezone.utc)
     return {
         "id": row.id,
         "username": row.username,
@@ -140,7 +137,7 @@ def log_dict(row: OperationLog) -> dict:
         "params": row.params,
         "response": row.response_body,
         "status_code": row.status_code,
-        "created_at": created.astimezone().strftime("%Y-%m-%d %H:%M:%S"),
+        "created_at": row.created_at,
     }
 
 

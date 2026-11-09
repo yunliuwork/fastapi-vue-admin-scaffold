@@ -1,4 +1,4 @@
-from datetime import timedelta, timezone
+from datetime import timedelta
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
@@ -11,7 +11,8 @@ from app.core.response import ok
 from app.core.security import create_token, decode_token, hash_password, verify_password
 from app.core.totp import new_secret, provisioning_uri, verify_code
 from app.db.session import get_db
-from app.models.user import User, utcnow
+from app.core.time import MS_PER_MINUTE, now_ms
+from app.models.user import User
 from app.schemas.bodies import (
     LoginRequest,
     LoginTotpConfirm,
@@ -75,28 +76,19 @@ def _user_from_pre_auth(db: Session, token: str, settings: Settings) -> User:
     return user
 
 
-def _aware(value):
-    if value is None:
-        return None
-    if value.tzinfo is None:
-        return value.replace(tzinfo=timezone.utc)
-    return value
-
-
 def _locked(user: User) -> bool:
-    until = _aware(user.locked_until)
-    return until is not None and until > utcnow()
+    return user.locked_until is not None and user.locked_until > now_ms()
 
 
 def _register_login_failure(db: Session, user: User | None) -> None:
     if user is None:
         return
-    if _aware(user.locked_until) is not None and not _locked(user):
+    if user.locked_until is not None and not _locked(user):
         user.failed_login_count = 0
         user.locked_until = None
     user.failed_login_count += 1
     if user.failed_login_count >= LOGIN_FAILURE_LIMIT:
-        user.locked_until = utcnow() + timedelta(minutes=LOGIN_LOCK_MINUTES)
+        user.locked_until = now_ms() + LOGIN_LOCK_MINUTES * MS_PER_MINUTE
     db.commit()
 
 
@@ -128,7 +120,7 @@ def _prepare_bind_material(user: User, settings: Settings) -> dict:
     secret = new_secret()
     user.totp_secret = secret
     user.totp_enabled = False
-    user.updated_at = utcnow()
+    user.updated_at = now_ms()
     return {
         "secret": secret,
         "otpauth_url": provisioning_uri(secret, username=user.username, issuer=settings.app_name),
@@ -187,7 +179,7 @@ def login_totp_bind(
     if not verify_code(user.totp_secret, body.totp_code):
         raise AppError(401, "验证码不正确，请核对 Google Authenticator 中的 6 位数字")
     user.totp_enabled = True
-    user.updated_at = utcnow()
+    user.updated_at = now_ms()
     write_log(db, user, "绑定谷歌验证器", user.username)
     return ok(_finish_login(db, user, settings))
 
@@ -209,7 +201,7 @@ def refresh(body: RefreshRequest, db: Session = Depends(get_db), settings: Setti
 def logout(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     write_log(db, user, "退出", user.username)
     user.token_version += 1
-    user.updated_at = utcnow()
+    user.updated_at = now_ms()
     db.commit()
     return ok(None)
 
@@ -226,7 +218,7 @@ def change_password(
     user.password_hash = hash_password(body.new_password)
     user.token_version += 1
     _clear_login_failures(user)
-    user.updated_at = utcnow()
+    user.updated_at = now_ms()
     write_log(db, user, "修改密码", user.username)
     db.commit()
     tokens = _session_tokens(user, settings)
@@ -260,7 +252,7 @@ def totp_disable(
         raise AppError(400, "谷歌验证码不正确")
     user.totp_secret = None
     user.totp_enabled = False
-    user.updated_at = utcnow()
+    user.updated_at = now_ms()
     write_log(db, user, "解绑谷歌验证器", user.username)
     db.commit()
     return ok(None)

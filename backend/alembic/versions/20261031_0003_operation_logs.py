@@ -20,7 +20,7 @@ def upgrade() -> None:
         sa.Column("action", sa.String(length=32), nullable=False),
         sa.Column("target", sa.String(length=255), nullable=False, server_default=""),
         sa.Column("ip", sa.String(length=64), nullable=False, server_default=""),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("created_at", sa.BigInteger(), nullable=False),
     )
     op.create_index("ix_operation_logs_user_id", "operation_logs", ["user_id"])
     op.create_index("ix_operation_logs_username", "operation_logs", ["username"])

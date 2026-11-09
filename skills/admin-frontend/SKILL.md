@@ -21,6 +21,7 @@ description: >-
 - 语义色不随主题变：成功 `#0E7C74`、失败 `#A33B32`；菜单三色标签也固定
 - 字体：`"IBM Plex Sans", "PingFang SC", "Microsoft YaHei", sans-serif`
 - 圆角 8px。主按钮不要投影
+- 后端时间字段是 13 位毫秒时间戳，接口直接返回数字；展示统一用 `@/utils/time` 的 `formatDateTime`，不要自己拼字符串或引 dayjs
 
 ## 颜色与标签
 
