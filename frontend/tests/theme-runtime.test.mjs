@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 
 import { DEFAULT_PALETTE_ID, getPalette } from '../src/theme/presets.ts'
-import { paletteToCssVars, readStoredPaletteId } from '../src/theme/runtime.ts'
+import { isLightColor, paletteToCssVars, readStoredPaletteId } from '../src/theme/runtime.ts'
 
 test('paletteToCssVars 输出全部主题变量且不含 id/label', () => {
   const vars = paletteToCssVars(getPalette('ocean'))
@@ -35,4 +35,18 @@ test('readStoredPaletteId 无存储或读取异常时回退默认', () => {
     },
   }
   assert.equal(readStoredPaletteId(broken), DEFAULT_PALETTE_ID)
+})
+
+test('isLightColor 区分深浅底色', () => {
+  assert.equal(isLightColor('#FFFFFF'), true)
+  assert.equal(isLightColor('#F1F3F4'), true)
+  assert.equal(isLightColor('#163033'), false)
+  assert.equal(isLightColor('#1F2328'), false)
+})
+
+test('登录页底色由侧栏深浅推导', () => {
+  assert.equal(paletteToCssVars(getPalette('snow'))['--login-bg'], '#1B1F22')
+  assert.equal(paletteToCssVars(getPalette('celadon'))['--login-bg'], '#163033')
+  assert.equal(paletteToCssVars(getPalette('snow'))['--login-saturate'], '0.35')
+  assert.equal(paletteToCssVars(getPalette('celadon'))['--login-saturate'], '1')
 })

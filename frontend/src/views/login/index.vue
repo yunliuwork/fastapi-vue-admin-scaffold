@@ -190,7 +190,7 @@ function backToCredentials() {
   min-height: 100vh;
   padding: 32px 20px;
   overflow: hidden;
-  background-color: var(--ink);
+  background-color: var(--login-bg);
 }
 
 .login::before {
@@ -198,7 +198,7 @@ function backToCredentials() {
   inset: 0;
   background: url('../../assets/login-bg.svg') center / cover no-repeat;
   content: '';
-  filter: hue-rotate(var(--login-hue));
+  filter: hue-rotate(var(--login-hue)) saturate(var(--login-saturate));
 }
 
 .card {
@@ -221,7 +221,7 @@ function backToCredentials() {
 
 .product {
   margin: 0;
-  color: var(--ink);
+  color: var(--text);
   font-size: 13px;
   font-weight: 600;
   line-height: 1.4;

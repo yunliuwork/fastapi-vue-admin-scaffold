@@ -1,6 +1,11 @@
 import type { ThemeConfig } from 'ant-design-vue/es/config-provider/context'
 
 import type { ThemePalette } from './theme/presets.ts'
+import { isLightColor } from './theme/runtime.ts'
+
+function menuTextOn(background: string, palette: ThemePalette): string {
+  return isLightColor(background) ? palette.text : '#F7FBFA'
+}
 
 const baseToken = {
   borderRadius: 8,
@@ -27,8 +32,8 @@ export function buildAntdTheme(palette: ThemePalette): ThemeConfig {
         colorItemBgSelected: palette.accent,
         colorItemBgHover: palette.menuHover,
         colorItemText: palette.menuText,
-        colorItemTextHover: '#F7FBFA',
-        colorItemTextSelected: '#F7FBFA',
+        colorItemTextHover: menuTextOn(palette.menuHover, palette),
+        colorItemTextSelected: menuTextOn(palette.accent, palette),
       },
       Layout: {
         colorBgHeader: palette.headerBg,

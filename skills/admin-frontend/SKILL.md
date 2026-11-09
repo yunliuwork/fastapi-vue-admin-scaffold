@@ -17,7 +17,7 @@ description: >-
 - Vue 3、TypeScript、Vite、Vue Router、Pinia、Axios、`ant-design-vue`
 - `ConfigProvider` 设置中文语言包，并关闭按钮中文自动插空格（`autoInsertSpaceInButton: false`）
 - 默认青瓷配色：主色 `#0E7C74`、侧栏 `#163033`、内容底 `#F2F5F4`、文字 `#162326`、分割线 `#D3DDDB`
-- 另有海蓝、墨紫、赭石三套配色，定义在 `src/theme/presets.ts`；通过 `--accent`/`--ink`/`--paper`/`--header-bg` 等 CSS 变量切换，组件里不要写死主题色
+- 另有海蓝、墨紫、赭石、皓白四套配色（皓白是白色侧栏 + 石墨主色），定义在 `src/theme/presets.ts`；通过 `--accent`/`--ink`/`--paper`/`--header-bg` 等 CSS 变量切换，组件里不要写死主题色
 - 语义色不随主题变：成功 `#0E7C74`、失败 `#A33B32`；菜单三色标签也固定
 - 字体：`"IBM Plex Sans", "PingFang SC", "Microsoft YaHei", sans-serif`
 - 圆角 8px。主按钮不要投影

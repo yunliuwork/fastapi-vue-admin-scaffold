@@ -21,11 +21,12 @@ const COLOR_KEYS = [
   'accountHover',
 ]
 
-test('四套配色 id 唯一且默认存在', () => {
+test('五套配色 id 唯一且默认存在', () => {
   const ids = palettes.map((p) => p.id)
-  assert.equal(ids.length, 4)
-  assert.equal(new Set(ids).size, 4)
+  assert.equal(ids.length, 5)
+  assert.equal(new Set(ids).size, 5)
   assert.ok(ids.includes(DEFAULT_PALETTE_ID))
+  assert.ok(ids.includes('snow'))
 })
 
 test('每套配色都定义了全部颜色且是十六进制', () => {

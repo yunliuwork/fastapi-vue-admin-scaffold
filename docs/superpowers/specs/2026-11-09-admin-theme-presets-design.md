@@ -9,7 +9,7 @@
 
 ## 目标
 
-- 4 套配色：青瓷（当前，默认）、海蓝、墨紫、赭石。
+- 5 套配色：青瓷（当前，默认）、海蓝、墨紫、赭石、皓白（白色侧栏 + 石墨主色）。
 - 顶栏放配色按钮，点选即时切换；刷新后保持。
 - 换肤范围覆盖「壳 + 主色」：主色、侧栏（含子菜单/悬停/选中）、内容底、顶栏、表头、斑马纹、页面里的浅色调块。
 - 首屏就要用对配色，不能先闪一下青瓷色。
@@ -35,26 +35,28 @@
 
 `accent`、`ink`、`menuSub`、`menuHover`、`menuText`、`paper`、`sheet`、`line`、`text`、`muted`、`rowAlt`、`rowHover`、`headerBg`、`accentSoft`、`accountHover`、`loginHue`。
 
+另有两个派生变量，不单独配置：`--login-bg`（侧栏是浅色时取 `text`，否则取 `ink`，保证登录卡片可读）、`--login-saturate`（浅色壳 `0.35`，其余 `1`，压淡登录页光晕）。侧栏是浅色的主题（皓白）用 AntD Menu 的 light 主题，选中的子菜单标题用 `--menu-text`。
+
 四套取值：
 
-| 变量 | 青瓷 | 海蓝 | 墨紫 | 赭石 |
-| --- | --- | --- | --- | --- |
-| accent | `#0E7C74` | `#2563C9` | `#6A4C93` | `#A85A2A` |
-| ink | `#163033` | `#14243D` | `#241C33` | `#33231B` |
-| menuSub | `#102628` | `#0F1C31` | `#1B1527` | `#271A13` |
-| menuHover | `#1D4548` | `#1C3253` | `#362A4B` | `#463225` |
-| menuText | `#D7E4E2` | `#D6E1F2` | `#E2DBEC` | `#EDE0D6` |
-| paper | `#F2F5F4` | `#F2F5FA` | `#F6F4F8` | `#F7F3EF` |
-| sheet | `#FBFCFB` | `#FBFCFE` | `#FCFBFD` | `#FCFAF8` |
-| line | `#D3DDDB` | `#D5DDE9` | `#DDD6E6` | `#E2D6CA` |
-| text | `#162326` | `#16202E` | `#201A2A` | `#2A211B` |
-| muted | `#5C6C6A` | `#556375` | `#5F566C` | `#6C5D52` |
-| rowAlt | `#F3F7F6` | `#F3F6FB` | `#F5F2F8` | `#F6F1EB` |
-| rowHover | `#EBF1EF` | `#EAF0F8` | `#EFEAF5` | `#F0E8E0` |
-| headerBg | `#F7FAF9` | `#F6F9FD` | `#FAF8FC` | `#FAF6F2` |
-| accentSoft | `#EEF6F5` | `#EDF3FC` | `#F1ECF7` | `#F7EEE6` |
-| accountHover | `#E7EEED` | `#E4EBF4` | `#EAE4F1` | `#EBE1D6` |
-| loginHue | `0deg` | `45deg` | `90deg` | `210deg` |
+| 变量 | 青瓷 | 海蓝 | 墨紫 | 赭石 | 皓白 |
+| --- | --- | --- | --- | --- | --- |
+| accent | `#0E7C74` | `#2563C9` | `#6A4C93` | `#A85A2A` | `#1F2328` |
+| ink | `#163033` | `#14243D` | `#241C33` | `#33231B` | `#FFFFFF` |
+| menuSub | `#102628` | `#0F1C31` | `#1B1527` | `#271A13` | `#FAFBFC` |
+| menuHover | `#1D4548` | `#1C3253` | `#362A4B` | `#463225` | `#F1F3F4` |
+| menuText | `#D7E4E2` | `#D6E1F2` | `#E2DBEC` | `#EDE0D6` | `#3A4247` |
+| paper | `#F2F5F4` | `#F2F5FA` | `#F6F4F8` | `#F7F3EF` | `#F7F8F8` |
+| sheet | `#FBFCFB` | `#FBFCFE` | `#FCFBFD` | `#FCFAF8` | `#FFFFFF` |
+| line | `#D3DDDB` | `#D5DDE9` | `#DDD6E6` | `#E2D6CA` | `#E3E6E8` |
+| text | `#162326` | `#16202E` | `#201A2A` | `#2A211B` | `#1B1F22` |
+| muted | `#5C6C6A` | `#556375` | `#5F566C` | `#6C5D52` | `#656C71` |
+| rowAlt | `#F3F7F6` | `#F3F6FB` | `#F5F2F8` | `#F6F1EB` | `#F7F8F9` |
+| rowHover | `#EBF1EF` | `#EAF0F8` | `#EFEAF5` | `#F0E8E0` | `#EFF2F3` |
+| headerBg | `#F7FAF9` | `#F6F9FD` | `#FAF8FC` | `#FAF6F2` | `#FBFCFC` |
+| accentSoft | `#EEF6F5` | `#EDF3FC` | `#F1ECF7` | `#F7EEE6` | `#F0F2F3` |
+| accountHover | `#E7EEED` | `#E4EBF4` | `#EAE4F1` | `#EBE1D6` | `#EFF1F2` |
+| loginHue | `0deg` | `45deg` | `90deg` | `210deg` | `0deg` |
 
 ### 应用方式
 

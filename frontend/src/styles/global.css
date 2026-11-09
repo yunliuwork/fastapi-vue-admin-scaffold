@@ -281,3 +281,8 @@ button:focus-visible {
     animation: none !important;
   }
 }
+
+/* 浅色侧栏（皓白）里，选中的子菜单标题在白底上要用正文色，不能沿用选中项的白色 */
+.ant-menu.ant-menu-light .ant-menu-submenu-selected > .ant-menu-submenu-title {
+  color: var(--menu-text);
+}

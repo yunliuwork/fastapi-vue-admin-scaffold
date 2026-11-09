@@ -13,6 +13,7 @@ import type { ItemType } from 'ant-design-vue'
 import { useSessionStore } from '@/stores/session'
 import { useThemeStore } from '@/stores/theme'
 import { palettes } from '@/theme/presets'
+import { isLightColor } from '@/theme/runtime'
 import { resetAccessRoutes } from '@/router/access'
 import { resolveIcon } from '@/utils/icons'
 import type { MenuNode } from '@/api/types'
@@ -21,6 +22,7 @@ const route = useRoute()
 const router = useRouter()
 const session = useSessionStore()
 const themeStore = useThemeStore()
+const menuTheme = computed<'dark' | 'light'>(() => (isLightColor(themeStore.palette.ink) ? 'light' : 'dark'))
 const themeOpen = ref(false)
 const collapsed = ref(false)
 const passwordOpen = ref(false)
@@ -154,7 +156,7 @@ async function savePassword() {
         {{ collapsed ? 'AS' : 'Admin Scaffold' }}
       </div>
       <a-menu
-        theme="dark"
+        :theme="menuTheme"
         mode="inline"
         :selected-keys="selectedKeys"
         :open-keys="openKeys"
@@ -327,7 +329,7 @@ async function savePassword() {
 .theme-dots i {
   width: 10px;
   height: 10px;
-  border: 1px solid rgba(22, 35, 38, 0.14);
+  border: 1px solid rgba(22, 35, 38, 0.24);
   border-radius: 50%;
 }
 

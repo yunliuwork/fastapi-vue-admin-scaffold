@@ -100,6 +100,26 @@ export const palettes: ThemePalette[] = [
     accountHover: '#EBE1D6',
     loginHue: '210deg',
   },
+  {
+    id: 'snow',
+    label: '皓白',
+    accent: '#1F2328',
+    ink: '#FFFFFF',
+    menuSub: '#FAFBFC',
+    menuHover: '#F1F3F4',
+    menuText: '#3A4247',
+    paper: '#F7F8F8',
+    sheet: '#FFFFFF',
+    line: '#E3E6E8',
+    text: '#1B1F22',
+    muted: '#656C71',
+    rowAlt: '#F7F8F9',
+    rowHover: '#EFF2F3',
+    headerBg: '#FBFCFC',
+    accentSoft: '#F0F2F3',
+    accountHover: '#EFF1F2',
+    loginHue: '0deg',
+  },
 ]
 
 export const DEFAULT_PALETTE_ID = 'celadon'

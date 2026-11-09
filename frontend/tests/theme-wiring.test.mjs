@@ -10,10 +10,10 @@ import { buildAntdTheme } from '../src/theme.ts'
 
 const SRC = fileURLToPath(new URL('../src', import.meta.url))
 
-test('paletteToCssVars 为每套配色输出 16 个变量', () => {
+test('paletteToCssVars 为每套配色输出 18 个变量', () => {
   for (const palette of palettes) {
     const vars = paletteToCssVars(palette)
-    assert.equal(Object.keys(vars).length, 16, palette.id)
+    assert.equal(Object.keys(vars).length, 18, palette.id)
     for (const key of ['--row-alt', '--row-hover', '--menu-sub', '--menu-hover', '--accent']) {
       assert.ok(vars[key], `${palette.id} ${key}`)
     }
@@ -54,4 +54,13 @@ test('源码里的主题变量都由 paletteToCssVars 提供', () => {
     }
   }
   assert.deepEqual([...missing].sort(), [])
+})
+
+test('皓白主题在浅色侧栏上使用深色悬停文字', () => {
+  const theme = buildAntdTheme(getPalette('snow'))
+  assert.equal(theme.components.Menu.colorItemBg, '#FFFFFF')
+  assert.equal(theme.components.Menu.colorItemTextHover, '#1B1F22')
+  assert.equal(theme.components.Menu.colorItemTextSelected, '#F7FBFA')
+  assert.equal(theme.components.Menu.colorItemBgSelected, '#1F2328')
+  assert.equal(theme.components.Layout.colorBgHeader, '#FBFCFC')
 })
