@@ -1,6 +1,6 @@
 import type { ThemeConfig } from 'ant-design-vue/es/config-provider/context'
 
-import type { ThemePalette } from './theme/presets'
+import type { ThemePalette } from './theme/presets.ts'
 
 const baseToken = {
   borderRadius: 8,

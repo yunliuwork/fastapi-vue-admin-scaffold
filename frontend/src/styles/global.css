@@ -7,8 +7,8 @@
   --muted: #5c6c6a;
   --accent: #0e7c74;
   --table-row: #ffffff;
-  --table-row-alt: #f3f7f6;
-  --table-row-hover: #ebf1ef;
+  --row-alt: #f3f7f6;
+  --row-hover: #ebf1ef;
   --menu-sub: #102628;
   --menu-hover: #1d4548;
   --menu-text: #d7e4e2;
@@ -77,11 +77,11 @@ button:focus-visible {
 }
 
 .ant-table-tbody > tr.ant-table-row:nth-child(even) > td {
-  background-color: var(--table-row-alt);
+  background-color: var(--row-alt);
 }
 
 .ant-table-tbody > tr.ant-table-row:hover > td {
-  background-color: var(--table-row-hover) !important;
+  background-color: var(--row-hover) !important;
 }
 
 .page {
