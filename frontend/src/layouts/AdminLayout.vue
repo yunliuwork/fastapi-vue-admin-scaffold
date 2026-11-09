@@ -127,7 +127,7 @@ async function savePassword() {
     <a-layout-sider
       v-model:collapsed="collapsed"
       class="sider"
-      :style="{ background: '#163033' }"
+      :style="{ background: 'var(--ink)' }"
       :width="216"
       :collapsed-width="72"
       breakpoint="xl"
@@ -209,7 +209,7 @@ async function savePassword() {
 .brand {
   height: 56px;
   padding: 0 20px;
-  color: #f4f7f6;
+  color: var(--menu-text);
   font-weight: 600;
   line-height: 56px;
   letter-spacing: 0.01em;
@@ -220,7 +220,7 @@ async function savePassword() {
   align-items: center;
   justify-content: space-between;
   padding: 0 12px 0 16px;
-  background: #f7faf9;
+  background: var(--header-bg);
   border-bottom: 1px solid var(--line);
 }
 
@@ -239,7 +239,7 @@ async function savePassword() {
 }
 
 .account:hover {
-  background: #e7eeed;
+  background: var(--account-hover);
 }
 
 .content {

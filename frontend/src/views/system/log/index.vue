@@ -195,7 +195,7 @@ onMounted(load)
 }
 
 .detail dt {
-  color: #5c6b69;
+  color: var(--muted);
   font-size: 13px;
 }
 
@@ -208,7 +208,7 @@ onMounted(load)
   padding: 12px;
   overflow: auto;
   border-radius: 8px;
-  background: #f7faf9;
+  background: var(--header-bg);
   white-space: pre-wrap;
   word-break: break-all;
   font-family: inherit;

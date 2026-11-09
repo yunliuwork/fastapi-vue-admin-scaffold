@@ -183,19 +183,27 @@ function backToCredentials() {
 
 <style scoped>
 .login {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
   padding: 32px 20px;
+  overflow: hidden;
   background-color: var(--ink);
-  background-image: url('../../assets/login-bg.svg');
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
+}
+
+.login::before {
+  position: absolute;
+  inset: 0;
+  background: url('../../assets/login-bg.svg') center / cover no-repeat;
+  content: '';
+  filter: hue-rotate(var(--login-hue));
 }
 
 .card {
+  position: relative;
+  z-index: 1;
   width: 100%;
   max-width: 400px;
   padding: 36px 32px 28px;

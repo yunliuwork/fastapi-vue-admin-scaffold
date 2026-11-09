@@ -69,7 +69,7 @@ const records = [
 }
 
 .stats .focus {
-  background: #eef6f5;
+  background: var(--accent-soft);
 }
 
 .stats div:last-child {
@@ -102,7 +102,7 @@ h2 {
 }
 
 .sheet :deep(.ant-table-thead > tr > th) {
-  background: #f7faf9;
+  background: var(--header-bg);
   color: var(--muted);
   font-weight: 600;
 }
@@ -120,14 +120,14 @@ h2 {
   display: inline-block;
   padding: 1px 8px;
   border-radius: 6px;
-  background: #eef2f1;
+  background: var(--row-alt);
   color: var(--muted);
   font-size: 12px;
   line-height: 20px;
 }
 
 .mark[data-hot='true'] {
-  background: #e4f2f0;
+  background: var(--accent-soft);
   color: var(--accent);
 }
 

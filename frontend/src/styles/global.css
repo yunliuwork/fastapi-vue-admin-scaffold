@@ -9,6 +9,13 @@
   --table-row: #ffffff;
   --table-row-alt: #f3f7f6;
   --table-row-hover: #ebf1ef;
+  --menu-sub: #102628;
+  --menu-hover: #1d4548;
+  --menu-text: #d7e4e2;
+  --header-bg: #f7faf9;
+  --accent-soft: #eef6f5;
+  --account-hover: #e7eeed;
+  --login-hue: 0deg;
 }
 
 * {
@@ -55,7 +62,7 @@ button:focus-visible {
 }
 
 .ant-table-thead > tr > th {
-  background: #f7faf9 !important;
+  background: var(--header-bg) !important;
 }
 
 .ant-table-thead > tr > th,
