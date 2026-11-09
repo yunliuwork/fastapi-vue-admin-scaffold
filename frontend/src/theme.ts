@@ -1,6 +1,6 @@
 import type { ThemeConfig } from 'ant-design-vue/es/config-provider/context'
 
-import { palettes, type ThemePalette } from './theme/presets'
+import type { ThemePalette } from './theme/presets'
 
 const baseToken = {
   borderRadius: 8,
@@ -38,4 +38,3 @@ export function buildAntdTheme(palette: ThemePalette): ThemeConfig {
   }
 }
 
-export const theme = buildAntdTheme(palettes[0])
